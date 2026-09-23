@@ -1,0 +1,2487 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>绍宋·中兴 — MUD 文字游戏原型</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231a1f26'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23d9a441' font-family='serif'%3E宋%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#2b2f36;
+    --ink-deep:#1a1f26;
+    --paper:#f2ead8;
+    --paper-deep:#e6dcc4;
+    --vermilion:#a83424;
+    --vermilion-light:#c9563f;
+    --gold:#b9933c;
+    --jade:#4a6b5d;
+    --jade-light:#7a9a8c;
+    --gray:#8a8272;
+    --line:#c9bda2;
+    --muted:#6f6758;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 20% -10%, rgba(185,147,60,.10), transparent 60%),
+      radial-gradient(900px 400px at 90% 10%, rgba(168,52,36,.08), transparent 55%),
+      var(--ink-deep);
+    color:var(--paper);
+    font-family:"Noto Serif SC","Songti SC","SimSun",serif;
+    min-height:100vh;
+    line-height:1.7;
+  }
+  /* ===== 顶栏 ===== */
+  header{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:10px 20px;
+    background:rgba(26,31,38,.94);
+    border-bottom:1px solid rgba(201,189,162,.25);
+    backdrop-filter:blur(6px);
+  }
+  .brand{display:flex;align-items:baseline;gap:12px;min-width:0;}
+  .brand .seal{
+    width:34px;height:34px;flex:none;
+    background:var(--vermilion);color:#f5ecdc;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:18px;border-radius:6px;
+    box-shadow:0 2px 6px rgba(0,0,0,.35);
+  }
+  .brand h1{font-size:19px;font-weight:700;letter-spacing:2px;white-space:nowrap;}
+  .brand .sub{font-size:12px;color:var(--gray);white-space:nowrap;}
+  .hud{display:flex;align-items:center;gap:10px;font-size:12.5px;flex-wrap:wrap;justify-content:flex-end;}
+  .hud .chip{
+    padding:3px 10px;border:1px solid var(--line);border-radius:999px;
+    color:var(--paper-deep);white-space:nowrap;
+  }
+  .hud .chip b{color:var(--gold);font-weight:700;}
+  .btn{
+    font-family:inherit;cursor:pointer;
+    border:1px solid var(--line);background:transparent;color:var(--paper);
+    padding:6px 14px;border-radius:6px;font-size:13px;
+    transition:all .15s ease;
+  }
+  .btn:hover{background:rgba(201,189,162,.15);border-color:var(--gold);}
+  .btn:disabled{opacity:.38;cursor:not-allowed;}
+  .btn.primary{background:var(--vermilion);border-color:var(--vermilion);color:#f8f1e2;font-weight:700;}
+  .btn.primary:hover{background:var(--vermilion-light);}
+  .btn.jade{background:var(--jade);border-color:var(--jade);color:#f2efe4;font-weight:700;}
+  .btn.jade:hover{background:var(--jade-light);}
+  /* ===== 主布局 ===== */
+  main{
+    display:grid;grid-template-columns:280px 1fr 320px;gap:14px;
+    max-width:1280px;margin:0 auto;padding:16px 20px 60px;
+  }
+  .panel{
+    background:rgba(46,52,62,.72);
+    border:1px solid rgba(201,189,162,.22);
+    border-radius:10px;padding:14px;margin-bottom:14px;
+  }
+  .panel h3{
+    font-size:13px;color:var(--gold);letter-spacing:3px;font-weight:700;
+    border-bottom:1px solid rgba(201,189,162,.28);
+    padding-bottom:6px;margin-bottom:10px;
+  }
+  /* 状态面板 */
+  .stat{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:13px;}
+  .stat .k{color:var(--paper-deep);}
+  .stat .v{font-weight:700;color:var(--paper);}
+  .stat .v.warn{color:#e0b45a;}
+  .stat .v.danger{color:#e07a5f;}
+  .stat .v.good{color:var(--jade-light);}
+  .bar{height:7px;border-radius:4px;background:rgba(0,0,0,.35);margin:3px 0 8px;overflow:hidden;}
+  .bar > i{display:block;height:100%;border-radius:4px;background:var(--jade);transition:width .3s;}
+  .bar.war > i{background:var(--vermilion);}
+  .bar.gold > i{background:var(--gold);}
+  .faction{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12.5px;}
+  .faction .nm{width:52px;color:var(--paper-deep);flex:none;}
+  .faction .fb{flex:1;height:6px;border-radius:3px;background:rgba(0,0,0,.35);overflow:hidden;}
+  .faction .fb > i{display:block;height:100%;border-radius:3px;}
+  .faction .num{width:30px;text-align:right;color:var(--paper);font-weight:700;}
+  /* 日志区 */
+  #stage{
+    min-height:420px;
+    background:
+      linear-gradient(rgba(46,52,62,.55), rgba(46,52,62,.55)),
+      repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(201,189,162,.06) 32px);
+    border:1px solid rgba(201,189,162,.22);
+    border-radius:10px;padding:18px 22px;
+  }
+  .turn-head{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+    border-bottom:1px dashed var(--line);padding-bottom:10px;margin-bottom:14px;
+  }
+  .turn-head .tt{font-size:16px;font-weight:700;letter-spacing:2px;color:var(--gold);}
+  .turn-head .td{font-size:12px;color:var(--gray);}
+  .report{
+    border-left:3px solid var(--vermilion);
+    background:rgba(168,52,36,.10);
+    padding:10px 14px;margin-bottom:14px;border-radius:0 6px 6px 0;
+  }
+  .report.jade{border-left-color:var(--jade);background:rgba(74,107,93,.12);}
+  .report.gold{border-left-color:var(--gold);background:rgba(185,147,60,.10);}
+  .report h4{font-size:13px;letter-spacing:1px;color:var(--vermilion-light);margin-bottom:4px;}
+  .report.jade h4{color:var(--jade-light);}
+  .report.gold h4{color:var(--gold);}
+  .report p{font-size:13.5px;color:var(--paper-deep);}
+  .log{
+    font-size:13px;color:var(--paper-deep);
+    max-height:300px;overflow-y:auto;
+    border-top:1px dashed var(--line);margin-top:14px;padding-top:10px;
+  }
+  .log .line{display:flex;gap:8px;padding:2px 0;border-bottom:1px dotted rgba(201,189,162,.10);}
+  .log .line .t{color:var(--gray);flex:none;font-size:11.5px;padding-top:2px;}
+  .log .line.good .txt{color:var(--jade-light);}
+  .log .line.bad .txt{color:#e07a5f;}
+  /* 决策面板 */
+  .action{
+    display:block;width:100%;text-align:left;
+    background:rgba(0,0,0,.22);
+    border:1px solid rgba(201,189,162,.25);
+    color:var(--paper);border-radius:8px;
+    padding:9px 12px;margin-bottom:8px;cursor:pointer;
+    font-family:inherit;font-size:13px;transition:all .12s;
+  }
+  .action:hover{border-color:var(--gold);background:rgba(185,147,60,.10);transform:translateX(2px);}
+  .action .an{display:block;font-weight:700;font-size:13.5px;color:var(--paper);}
+  .action .ad{display:block;font-size:11.5px;color:var(--gray);line-height:1.45;margin-top:2px;}
+  .action .ac{display:block;font-size:11.5px;color:var(--vermilion-light);margin-top:2px;}
+  .action.disabled{opacity:.4;cursor:not-allowed;}
+  .action.disabled:hover{transform:none;border-color:rgba(201,189,162,.25);background:rgba(0,0,0,.22);}
+  .action.flag{outline:1px solid var(--gold);outline-offset:1px;}
+  /* 快速功能（情报/议事/召见/后宫） */
+  .quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+  .quick .qbtn{
+    text-align:left;cursor:pointer;font-family:inherit;
+    background:rgba(0,0,0,.22);
+    border:1px solid rgba(201,189,162,.25);
+    color:var(--paper);border-radius:8px;padding:8px 10px;
+    transition:all .12s;
+  }
+  .quick .qbtn:hover{border-color:var(--gold);background:rgba(185,147,60,.12);}
+  .quick .qbtn .qn{display:block;font-weight:700;font-size:13px;}
+  .quick .qbtn .qd{display:block;font-size:11px;color:var(--gray);margin-top:1px;}
+  .quick .qbtn.used{opacity:.45;cursor:not-allowed;}
+  .quick .qbtn.used:hover{border-color:rgba(201,189,162,.25);background:rgba(0,0,0,.22);}
+  .quick .qbtn .qtag{display:inline-block;font-size:10px;color:var(--gold);border:1px solid var(--gold);border-radius:3px;padding:0 4px;margin-left:4px;}
+  /* 弹层对话 */
+  .choice-list{display:flex;flex-direction:column;gap:8px;}
+  .choice-item{
+    text-align:left;cursor:pointer;font-family:inherit;
+    background:rgba(0,0,0,.22);border:1px solid rgba(201,189,162,.28);
+    color:var(--paper);border-radius:8px;padding:10px 12px;transition:all .12s;
+  }
+  .choice-item:hover{border-color:var(--gold);background:rgba(185,147,60,.10);}
+  .choice-item .cn{display:block;font-weight:700;font-size:14px;}
+  .choice-item .cd{display:block;font-size:12px;color:var(--gray);margin-top:2px;line-height:1.5;}
+  .dialogue{
+    border-left:3px solid var(--jade);
+    background:rgba(74,107,93,.10);
+    padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;
+    font-size:13.5px;color:var(--paper-deep);line-height:1.8;
+  }
+  .dialogue .who{color:var(--gold);font-weight:700;font-size:12.5px;display:block;margin-bottom:4px;}
+  .dialogue.war{border-left-color:var(--vermilion);background:rgba(168,52,36,.10);}
+  .dialogue.peace{border-left-color:#b9933c;background:rgba(185,147,60,.08);}
+  .dialogue.intel{border-left-color:var(--jade-light);background:rgba(122,154,140,.10);}
+  .intel-box{
+    border:1px dashed var(--jade-light);border-radius:8px;
+    padding:10px 14px;margin:10px 0;font-size:13px;color:var(--paper-deep);
+    background:rgba(122,154,140,.08);
+  }
+  .intel-box .it{display:block;font-weight:700;color:var(--jade-light);margin-bottom:4px;letter-spacing:1px;}
+  .intel-box .il{display:block;font-size:12px;color:var(--gray);margin-top:4px;}
+  .topic-head{font-size:14px;font-weight:700;color:var(--vermilion-light);margin:8px 0 6px;letter-spacing:1px;}
+  .voices{margin:8px 0;}
+  .voice{font-size:13px;color:var(--paper-deep);padding:5px 0;border-bottom:1px dotted rgba(201,189,162,.15);line-height:1.7;}
+  .voice b{color:var(--gold);font-weight:700;margin-right:6px;}
+  .voice .st{font-size:11px;color:var(--gray);margin-left:6px;}
+  .voice.lead{background:rgba(185,147,60,.08);border-left:2px solid var(--gold);padding-left:8px;}
+  /* 战役结算 */
+  .battle-box{
+    border:1px solid var(--vermilion);
+    background:rgba(26,31,38,.9);
+    border-radius:10px;padding:18px;margin:14px 0;
+  }
+  .battle-box h3{color:var(--vermilion-light);font-size:15px;letter-spacing:2px;margin-bottom:10px;}
+  .vs{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;text-align:center;margin:10px 0;}
+  .vs .side{padding:10px;border-radius:8px;background:rgba(0,0,0,.3);}
+  .vs .side .sn{font-size:13px;color:var(--gray);}
+  .vs .side .sp{font-size:20px;font-weight:700;color:var(--paper);}
+  .vs .side.song .sp{color:var(--gold);}
+  .vs .side.jin .sp{color:#d8907c;}
+  .vs .mid{font-size:22px;color:var(--vermilion-light);font-weight:700;}
+  .verdict{text-align:center;font-size:17px;font-weight:700;padding:8px;border-radius:6px;margin-top:6px;}
+  .verdict.win{background:rgba(74,107,93,.25);color:var(--jade-light);}
+  .verdict.lose{background:rgba(168,52,36,.25);color:#e07a5f;}
+  /* 结局 */
+  .ending{
+    border:1px solid var(--gold);
+    background:radial-gradient(600px 300px at 50% 0%, rgba(185,147,60,.14), transparent 70%);
+    border-radius:12px;padding:26px;text-align:center;margin:16px 0;
+  }
+  .ending h2{font-size:24px;letter-spacing:6px;color:var(--gold);margin-bottom:8px;}
+  .ending .sub{color:var(--gray);font-size:13px;margin-bottom:14px;}
+  .ending p{font-size:14px;color:var(--paper-deep);max-width:560px;margin:0 auto 14px;}
+  /* 序章 */
+  .prologue p{margin-bottom:12px;font-size:14px;color:var(--paper-deep);}
+  .prologue .emphasis{color:var(--gold);font-weight:700;}
+  /* 弹层 */
+  .modal-mask{
+    position:fixed;inset:0;background:rgba(10,12,15,.82);z-index:100;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-mask.open{display:flex;}
+  .modal{
+    background:var(--ink);border:1px solid var(--line);border-radius:12px;
+    max-width:620px;width:100%;max-height:86vh;overflow-y:auto;padding:22px;
+  }
+  .modal h3{color:var(--gold);letter-spacing:3px;font-size:16px;margin-bottom:10px;border-bottom:1px dashed var(--line);padding-bottom:8px;}
+  .modal p{font-size:13.5px;color:var(--paper-deep);margin-bottom:10px;}
+  .modal .help{border:1px dashed var(--line);padding:10px 12px;border-radius:8px;font-size:12.5px;color:var(--gray);margin:10px 0;}
+  .modal .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+  /* 底部 */
+  footer{max-width:1280px;margin:0 auto;padding:6px 20px 40px;color:var(--gray);font-size:11.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  footer a{color:var(--gold);text-decoration:none;}
+  /* 响应式 */
+  @media (max-width:1080px){
+    main{grid-template-columns:1fr;}
+    .sidebar{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .sidebar .panel{margin-bottom:0;}
+  }
+  @media (max-width:640px){
+    .sidebar{grid-template-columns:1fr;}
+    header{padding:8px 10px;flex-wrap:wrap;}
+    .brand .sub{display:none;}
+    .brand h1{font-size:17px;}
+    .hud{gap:6px;width:100%;justify-content:flex-start;}
+    .hud .chip{font-size:12px;padding:3px 8px;}
+    .hud .btn{padding:8px 10px;font-size:12.5px;min-height:44px;}
+    main{padding:12px 12px 40px;}
+    #stage{padding:14px;min-height:360px;}
+    .btn,.action{min-height:44px;}
+    .stat,.faction,.log .line{font-size:14px;}
+    .action .an{font-size:14.5px;}
+    .action .ad,.action .ac{font-size:12.5px;}
+    .modal p{font-size:14px;}
+    .modal .help{font-size:13px;}
+    footer{font-size:12px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="seal">宋</div>
+    <h1>绍宋·中兴</h1>
+    <span class="sub">MUD 文字游戏 · P0 原型</span>
+  </div>
+  <div class="hud">
+    <span class="chip">建炎 <b id="h-year">元年</b></span>
+    <span class="chip">第 <b id="h-turn">0</b> 旬</span>
+    <span class="chip">国库 <b id="h-treasury">500000</b> 贯</span>
+    <span class="chip">皇权威势 <b id="h-authority">40</b></span>
+    <button class="btn" id="btn-help">玩法说明</button>
+    <button class="btn" id="btn-save">存档</button>
+    <button class="btn" id="btn-load">读档</button>
+    <button class="btn" id="btn-restart">重开</button>
+  </div>
+</header>
+
+<main>
+  <!-- 左侧：状态 -->
+  <aside class="sidebar">
+    <div class="panel">
+      <h3>行在状态</h3>
+      <div class="stat"><span class="k">国库</span><span class="v" id="s-treasury">500000 贯</span></div>
+      <div class="stat"><span class="k">月结余</span><span class="v" id="s-cashflow">+13333 贯</span></div>
+      <div class="stat"><span class="k">皇权威势</span><span class="v" id="s-authority">40</span></div>
+      <div class="stat"><span class="k">民心</span><span class="v" id="s-morale">55</span></div>
+      <div class="bar gold"><i id="b-authority" style="width:40%"></i></div>
+      <div class="stat" style="margin-top:8px"><span class="k">君德（昏庸↔贤能）</span><span class="v" id="s-virtue">60</span></div>
+      <div class="bar" style="background:linear-gradient(90deg,#5a2a22,#3f3224,#2c4436)"><i id="b-virtue" style="width:60%;background:linear-gradient(90deg,#a83424,#b9933c,#4a6b5d)"></i></div>
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--gray);margin-top:2px"><span>昏聩</span><span>圣明</span></div>
+      <h3 style="margin-top:12px">朝堂三派</h3>
+      <div class="faction"><span class="nm">主战派</span><div class="fb"><i id="fb-war" style="width:40%;background:var(--vermilion)"></i></div><span class="num" id="n-war">40</span></div>
+      <div class="faction"><span class="nm">主和派</span><div class="fb"><i id="fb-peace" style="width:55%;background:#b9933c"></i></div><span class="num" id="n-peace">55</span></div>
+      <div class="faction"><span class="nm">中间派</span><div class="fb"><i id="fb-mid" style="width:50%;background:#7a9a8c"></i></div><span class="num" id="n-mid">50</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>下蔡守军（张俊部）</h3>
+      <div class="stat"><span class="k">兵力</span><span class="v" id="s-troops">30000 人</span></div>
+      <div class="stat"><span class="k">训练</span><span class="v" id="s-train">65</span></div>
+      <div class="bar"><i id="b-train" style="width:65%"></i></div>
+      <div class="stat"><span class="k">士气</span><span class="v" id="s-spirit">70</span></div>
+      <div class="bar"><i id="b-spirit" style="width:70%"></i></div>
+      <div class="stat"><span class="k">装备</span><span class="v" id="s-equip">60</span></div>
+      <div class="bar"><i id="b-equip" style="width:60%"></i></div>
+      <div class="stat"><span class="k">守城系数</span><span class="v" id="s-defend">1.20</span></div>
+      <div class="stat"><span class="k">估算战力</span><span class="v" id="s-power">—</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>时局小图 <span style="font-size:11px;color:var(--gray);font-weight:normal">（点击放大）</span></h3>
+      <div id="mini-map" style="cursor:pointer;border:1px solid var(--line);border-radius:4px;overflow:hidden"></div>
+    </div>
+  </aside>
+
+  <!-- 中间：叙事 -->
+  <section id="stage"></section>
+
+  <!-- 右侧：决策 -->
+  <aside class="sidebar">
+    <div class="panel">
+      <h3>本旬决策</h3>
+      <div id="quick" class="quick"></div>
+      <div id="actions"></div>
+      <button class="btn primary" id="btn-end-turn" style="width:100%;margin-top:6px">结束本旬</button>
+    </div>
+    <div class="panel">
+      <h3>战报日志</h3>
+      <div id="log" class="log" style="max-height:320px"></div>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <span>《绍宋·中兴》MUD 文字游戏 · P0 可玩原型 · 依据《绍宋》世界观与 GDD 设计</span>
+  <span>规则集 <b>ruleset:shaosong-mud-p0-v1</b> · 本地存档于浏览器</span>
+</footer>
+
+<!-- 帮助弹层 -->
+<div class="modal-mask" id="mask-help">
+  <div class="modal">
+    <h3>玩法说明</h3>
+    <p>建炎元年秋，你从明道宫九龙井中醒来——你是赵玖，穿越而来的宋高宗。</p>
+    <p>金军东路军即将南下。你的目标是：稳住行在、守住下蔡，在淮上击败金军。</p>
+    <div class="help">
+      <b>一回合 = 一旬（10 日）。</b><br>
+      每旬先看军报与朝报，然后在右侧做决策：练兵、犒军、置备装备、加固城防、发行国债、处置朝臣、站队表态。<br>
+      每旬结算军饷俸禄支出与税赋收入；国库不可为负。<br>
+      金军到达时触发<b>下蔡守卫战</b>，按战力公式结算胜负，战果决定历史走向。
+    </div>
+    <div class="help">
+      <b>新增 · 四个常设环节（每旬各限一次）：</b><br>
+      ① <b>探事（情报）</b>：遣皇城司探事司，耗 1 万贯，得金军/朝中/地方秘报，部分情报有实质增益；<br>
+      ② <b>政事堂议事</b>：御前听宰执放对，拍板议题，朝局随之浮动；<br>
+      ③ <b>召对行在文武</b>：召见张俊、韩世忠、李纲、赵鼎等，问军事问朝局；<br>
+      ④ <b>后宫 · 起居</b>：问安吴夫人、潘贤妃等，或行民间选妃、浣衣纳言、翻花牌、酒池肉林等事——一切皆牵动<b>君德</b>（昏庸↔贤能），君德高低将影响朝局与结局。
+    </div>
+    <div class="help">
+      <b>君德（昏庸↔贤能）：</b>随玩家行为增减——勤政、亲民、节制则君德升；纵欲享乐、劳民伤财则君德降。君德过低时，朝堂离心、民心涣散，结局亦多蒙阴翳。
+    </div>
+    <p><b>战力公式：</b>兵力 × (0.5+训练/200) × (0.5+士气/200) × (0.5+装备/200) × (1+(统御-70)/100) × 地形系数</p>
+    <p><b>胜负档：</b>战力比 ≥1.15 大胜 · 1.00–1.15 小胜 · 0.85–1.00 小负 · &lt;0.85 大败</p>
+    <p><b>政令成功率：</b>40% + 皇权威势×0.3 + 相关派系支持×0.2，上限 95%</p>
+    <div class="row">
+      <button class="btn primary" id="btn-help-close">开始游戏</button>
+    </div>
+  </div>
+</div>
+
+<!-- 情报弹层 -->
+<div class="modal-mask" id="mask-intel">
+  <div class="modal">
+    <h3>皇城司 · 探事司</h3>
+    <p>提举皇城司杨沂中呈报。每旬可遣探事两三百人洒出去，探金军动向、察朝中串联、闻地方灾变。花费 <b>1万贯</b>。</p>
+    <div id="intel-body"></div>
+    <div class="row">
+      <button class="btn" id="btn-intel-close">收回</button>
+    </div>
+  </div>
+</div>
+
+<!-- 朝堂议事弹层 -->
+<div class="modal-mask" id="mask-court">
+  <div class="modal">
+    <h3>政事堂 · 御前议事</h3>
+    <p>东西二府宰执、台谏学士环侍御前。每旬可开一次御前会议，听群臣放对，由你拍板。议定即颁敕，动摇朝局。</p>
+    <div id="court-body"></div>
+    <div class="row">
+      <button class="btn" id="btn-court-close">散朝</button>
+    </div>
+  </div>
+</div>
+
+<!-- 召见弹层 -->
+<div class="modal-mask" id="mask-audience">
+  <div class="modal">
+    <h3>行在召对</h3>
+    <p>下蔡行在，文武错落。每旬可召见一位臣工，问军事、问朝局、问人心——或者只是听他说说话。</p>
+    <div id="audience-body"></div>
+    <div class="row">
+      <button class="btn" id="btn-audience-close">退下</button>
+    </div>
+  </div>
+</div>
+
+<!-- 后宫弹层 -->
+<div class="modal-mask" id="mask-harem">
+  <div class="modal">
+    <h3>后宫起居</h3>
+    <p>行在狭小，后宫与政事只隔一堵墙。每旬可入内宫一次：与家人说说话，或行宫闱起居之事——一切取舍，皆牵动君德（昏庸↔贤能）。</p>
+    <div id="harem-body"></div>
+    <div class="row">
+      <button class="btn" id="btn-harem-close">出宫</button>
+    </div>
+  </div>
+</div>
+
+<!-- 时局图弹层 -->
+<div class="modal-mask" id="mask-map">
+  <div class="modal" style="max-width:980px;width:96%">
+    <h3>山河舆图 · 建炎元年局势</h3>
+    <p style="font-size:12.5px;color:var(--gray)">
+      <span style="color:var(--gold)">●</span> 金人占有　　
+      <span style="color:#e07a5f">●</span> 大宋所有　　
+      <span style="color:#b07cc6">●</span> 西夏割据　　
+      <span style="color:#7fb8a5">●</span> 大理自立　　
+      <span style="color:#c69c6d">●</span> 交趾化外　　
+      <span style="color:#9a9a9a">●</span> 淮南交战　　
+      <span style="color:#fff">◎</span> 行在
+    </p>
+    <div id="map-body"></div>
+    <div class="row">
+      <button class="btn" id="btn-map-close">合上舆图</button>
+    </div>
+  </div>
+</div>
+
+<!-- 北伐弹层 -->
+<div class="modal-mask" id="mask-raid">
+  <div class="modal" style="max-width:680px">
+    <h3>北伐 · 收复城邑</h3>
+    <p style="font-size:12.5px;color:var(--gray)">选一座相邻金占城池出击。每旬可遣一军。胜则收城、缴获粮米；败则折损更多。</p>
+    <div id="raid-body"></div>
+    <div class="row">
+      <button class="btn" id="btn-raid-close">罢兵</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================================================================
+   ruleset:shaosong-mud-p0-v1 —— 配置源与 GDD 数值一致
+   ================================================================ */
+const RULESET_ID = "shaosong-mud-p0-v1";
+const CONFIG = {
+  // 财政（按旬折算，1月=3旬）
+  treasury_start: 500000,
+  income_per_turn: 40000,   // 月入12万贯 / 3
+  expense_per_turn: 26667,  // 月支8万贯 / 3
+  // 战力
+  cmd_base: 70,
+  terrain_defend: 1.20,
+  terrain_field: 1.00,
+  terrain_attack: 0.80,
+  terrain_water: 1.50,
+  win_high: 1.15,
+  win_low: 1.00,
+  loss_low: 0.85,
+  // 朝堂
+  policy_base: 0.40,
+  policy_authority_w: 0.30,
+  policy_faction_w: 0.20,
+  policy_cap: 0.95,
+  // 金军
+  jin_troops: 25000,
+  jin_train: 80,
+  jin_spirit: 85,
+  jin_equip: 80,
+  jin_cmd: 90,        // 兀术
+  jin_travel_turns: 8 // 从开局到兵临下蔡的旬数
+};
+
+/* 将领表（源自人物.txt） */
+const GENERALS = {
+  zhangjun: { name:"张俊", title:"御营右军都统制", cmd:85, spirit:70, desc:"贪财但善治军，下蔡守卫的不二人选" },
+  hanshizhong:{ name:"韩世忠", title:"御营左军都统制", cmd:92, spirit:88, desc:"陛下腰胆，可率水军断金军后路" },
+  yuefei:   { name:"岳飞", title:"御营前军都统制", cmd:90, spirit:95, desc:"忠勇绝伦，可北渡牵制金军" },
+  liyanxian:{ name:"李彦仙", title:"陕州镇抚使", cmd:88, spirit:90, desc:"关西中流砥柱，正在陕州苦战" }
+};
+
+/* ================================================================
+   情报池（皇城司探事司）—— 源自原文：杨沂中提举皇城司、探事司两三百人
+   ================================================================ */
+const INTEL_POOL = [
+  {
+    id:"jin-advance", tag:"金军",
+    title:"金军分兵之讯",
+    text:"探事回报：兀术并未把全部兵马压向一处，而是分出一支偏师沿颍水北上，似是欲断下蔡与顺昌之间的粮道。杨沂中在旁低声：“陛下，粮道若断，士气必沮。”",
+    effect_label:"若及时加固粮道，此后军饷不再动摇士气",
+    run(){
+      G.flag_luck = true;
+      logTurn("探事得报：金军分兵断粮道，你及时加固粮道。士气不再因此动摇", "good");
+    }
+  },
+  {
+    id:"jin-pace", tag:"金军",
+    title:"金军行军放缓",
+    text:"探事回报：连日阴雨，淮北泥泞，金军重骑行动迟缓，比预期慢了数日。斥候在雨中望见金军营地炊烟稀薄，似有粮草不济之状。",
+    effect_label:"金军攻城时战力略降（受雨天泥泞影响）",
+    run(){
+      G.flag_jin_slow = true;
+      logTurn("探事得报：金军为泥泞所阻，行军迟缓，锐气受挫", "good");
+    }
+  },
+  {
+    id:"court-serial", tag:"朝中",
+    title:"主和串联之迹",
+    text:"探事回报：扬州一系官吏近日频繁出入行在客栈，有人往刘光世军中送书。杨沂中压低了声音：“是旧日黄相公的门下，言语间颇有‘保全’之意。”",
+    effect_label:"可提前弹压，阻止主和派暗中坐大",
+    run(){
+      G.flag_court_purge = true;
+      addFaction("peace", -8); addFaction("war", +4); addFaction("mid", -2);
+      logTurn("探事得报主和串联，你提前弹压，主和派 -8，主战派 +4", "good");
+    }
+  },
+  {
+    id:"local-famine", tag:"地方",
+    title:"流民蜂拥之报",
+    text:"京东两路溃兵与流民沿淮河而下，已聚数千人于下蔡城外，嗷嗷待哺。有人报他们欲投行在，也有人报其中混有金军细作。",
+    effect_label:"若以工代赈收编，可增民望与兵源",
+    run(){
+      G.flag_refugees = true;
+      logTurn("探事得报流民聚集，你以工代赈收编流民，民心 +3", "good");
+      G.popular = clamp(G.popular + 3, 0, 100);
+    }
+  },
+  {
+    id:"local-yiyun", tag:"地方",
+    title:"义军呼应之讯",
+    text:"淮北传来消息：有几支本地义军闻行在驻下蔡，已主动向城下联络，愿受朝廷节制。为首者自称是\u201C八字军\u201D旧部，胸中犹有热血。",
+    effect_label:"可收编义军，兵力小增",
+    run(){
+      G.troops += 2000;
+      G.spirit = clamp(G.spirit + 3, 0, 100);
+      logTurn("探事得报义军来投，你收编义军两千，士气 +3", "good");
+    }
+  },
+  {
+    id:"court-accusation", tag:"朝中",
+    title:"弹章暗流",
+    text:"御史台有人拟好弹章，欲参张俊\u201C克扣军饷、中饱私囊\u201D。杨沂中把抄件递上来：“陛下，此章若发，前线军心必乱；不发，台谏必有怨言。”",
+    effect_label:"可压弹章护将，或顺水推舟整军纪",
+    run(){
+      G.flag_impeach = true;
+      logTurn("探事得报台谏欲弹张俊，你暗中压下弹章，护住前线将心", "");
+    }
+  }
+];
+
+/* ================================================================
+   朝堂议题（政事堂 · 御前议事）
+   ================================================================ */
+const COURT_TOPICS = [
+  {
+    id:"war-defense", title:"战守之议",
+    intro:"军情如火，政事堂中却先起了争论：是坚壁清野、守株待兔，还是主动渡淮、先发制人？",
+    voices:[
+      { name:"张浚", stance:"主战", text:"官家驻跸下蔡，天下属目！若只坐守孤城，金人必以为我怯。臣请募死士渡淮，焚其辎重，乱其军心！", cls:"war" },
+      { name:"赵鼎", stance:"主守", text:"张中丞之论壮则壮矣，然下蔡城小粮薄，若野战失利，行在危矣。臣请专务守备，以逸待劳。", cls:"peace" },
+      { name:"吕好问", stance:"调和", text:"二位所言皆有道理。臣只请陛下记着：今日之议，当以行在万全为第一。", cls:"" }
+    ],
+    options:[
+      { label:"主战 · 渡淮焚其辎重", effects:"war+8 peace-6 spirit+3", risk:"若军心不振恐有败绩" },
+      { label:"主守 · 坚壁清野", effects:"war-4 peace+6 defend+0.02", risk:"金军围城日久" },
+      { label:"持重 · 先固粮道再议战守", effects:"mid+5", risk:"无" }
+    ]
+  },
+  {
+    id:"tax-reform", title:"度田清丈之议",
+    intro:"关西、京东流亡日久，田籍散乱，豪强隐匿。有臣请行度田清丈以增税赋，士绅闻之哗然。",
+    voices:[
+      { name:"张浚", stance:"主行", text:"度田一事，臣在关西试行过，清出隐田甚多。陛下若行，臣请亲自督办。", cls:"war" },
+      { name:"赵鼎", stance:"主缓", text:"国难之际，士绅犹有输纳之劳。若遽行度田，恐逼反地方，官家三思。", cls:"peace" },
+      { name:"林景默", stance:"中立", text:"臣只知度田若行，则文书繁杂；不行，则国库日绌。唯陛下裁之。", cls:"" }
+    ],
+    options:[
+      { label:"行度田 · 增税入", effects:"treasury+20000 peace-8", risk:"士绅怨望" },
+      { label:"暂缓 · 先安人心", effects:"mid+4 peace+4", risk:"国库日绌" },
+      { label:"折中 · 只在京东试行", effects:"treasury+8000 mid+2", risk:"成效有限" }
+    ]
+  },
+  {
+    id:"reward-generals", title:"升赏诸将之议",
+    intro:"御前班直、诸将鏖战有功，赏格该当如何？吝则寒将士心，滥则国库难支。",
+    voices:[
+      { name:"杨沂中", stance:"主厚赏", text:"陛下，士卒是拿命换的！朝廷若吝一赏，他日再战，谁肯向前？臣斗胆请厚赏前军。", cls:"war" },
+      { name:"许景衡", stance:"主量入", text:"国库之财，皆民脂膏。今战事未已，赏可厚而不可滥，请分等第行之。", cls:"peace" },
+      { name:"吕好问", stance:"调和", text:"功赏之典，国之信也。臣请明定条例，使赏有所据，将心服，民不怨。", cls:"" }
+    ],
+    options:[
+      { label:"厚赏诸军", effects:"treasury-30000 spirit+8 war+4", risk:"国库承压" },
+      { label:"按等第赏", effects:"treasury-15000 spirit+4 mid+3", risk:"无" },
+      { label:"只赏首功", effects:"treasury-8000 spirit+1 war-3", risk:"将士寒心" }
+    ]
+  },
+  {
+    id:"refugee-settle", title:"流民安置之议",
+    intro:"淮北流民源源南下，聚于城下者日多。是驱之、用之，还是养之？",
+    voices:[
+      { name:"赵鼎", stance:"主安置", text:"流民皆赤子也！若驱之，必为金人所用；若养之，则人心归附。臣请以工代赈，筑城浚河。", cls:"peace" },
+      { name:"张浚", stance:"主募兵", text:"流民中壮者甚多，与其耗粮养闲，不如择其精壮者编入行伍，一举两得！", cls:"war" },
+      { name:"陈规", stance:"主防奸", text:"臣只请陛下记得：流民之中，必有金人细作混杂，安置之时须防患于未然。", cls:"" }
+    ],
+    options:[
+      { label:"以工代赈安置", effects:"treasury-15000 popular+6", risk:"细作混入" },
+      { label:"择壮募兵", effects:"treasury-10000 troops+2500", risk:"民怨" },
+      { label:"驱之勿纳", effects:"popular-8 peace+2", risk:"流民投金" }
+    ]
+  },
+  {
+    id:"chancellor-appoint", title:"相权去留之议",
+    intro:"吕好问年事已高，屡请致仕；李纲在东南养病，朝中呼声要他复相。相位之议，牵动朝局。",
+    voices:[
+      { name:"胡寅", stance:"主李纲", text:"李平章若在朝，主战之气必振！臣请以驿马召其还朝，共商北伐大计。", cls:"war" },
+      { name:"许景衡", stance:"主吕相", text:"吕相虽温，然老成持重，朝局赖其调和。李纲性刚，恐与台谏再起冲突。", cls:"peace" },
+      { name:"吕好问", stance:"辞让", text:"臣老矣，愿避贤路。只求陛下用人之际，记得‘忠’字。", cls:"" }
+    ],
+    options:[
+      { label:"召李纲还朝主政", effects:"war+8 authority+3", risk:"台谏激荡" },
+      { label:"留吕好问，加平章衔", effects:"mid+5 peace+3", risk:"主战派失望" },
+      { label:"两相并置，分掌军国", effects:"mid+3 war+3 peace+2", risk:"权责相掣" }
+    ]
+  }
+];
+
+/* ================================================================
+   行在召对（文武对话）—— 源自人物.txt 行在人物
+   ================================================================ */
+const AUDIENCES = [
+  {
+    id:"zhangjun", name:"张俊", title:"御营右军都统制", face:"military",
+    lines:[
+      "张俊搓着手进来，先偷看了一眼你的脸色，才笑：“陛下，城防的事臣不敢怠慢。就是……军饷能否再拨些？士卒们要吃饭，臣也好办事。”",
+      "你盯着他看了半晌，忽然道：“张俊，朕知道你能打仗。你若把贪的劲头用在练兵上，何愁金人不破。”他怔了怔，随即正色：“陛下说的是。臣一定尽力。”"
+    ],
+    effect(){ G.spirit = clamp(G.spirit + 3,0,100); G.treasury -= 10000; logTurn("召见张俊，犒赏军心，士气 +3，耗银 1万贯","good"); },
+    result:"张俊领命而去。他贪是真贪，能用也是真能用——你暂时还离不开这双手。"
+  },
+  {
+    id:"hanshizhong", name:"韩世忠", title:"御营左军都统制", face:"military",
+    lines:[
+      "韩世忠立在帐前，甲胄未卸，腰间的刀穗还带着淮上的水汽。他笑道：“陛下唤臣，可是要打仗了？”",
+      "“不急。”你看着他，“先说说，若金军从水路来，你有几分把握？”他眼睛一亮：“只要陛下给臣船，臣就有十分把握！他兀术的浮桥，臣见得多了。”"
+    ],
+    effect(){ G.spirit = clamp(G.spirit + 4,0,100); addFaction("war", +3); logTurn("召见韩世忠，士气 +4，主战派 +3","good"); },
+    result:"韩世忠请战之意炽烈。有他在，淮上的水路便稳了一半。"
+  },
+  {
+    id:"ligang", name:"李纲", title:"平章军国重事（东南养病）", face:"civil",
+    lines:[
+      "李纲病中仍写来长札，字迹遒劲如刀：“陛下幸自保重，中兴之业，不可一日忘北伐。纲虽病，心在行在。”",
+      "你读罢札子，沉默良久。李纲是把你往‘抗金到底’这条路上推的人，也是你最重的政治砝码。"
+    ],
+    effect(){ addFaction("war", +5); addFaction("peace", -2); logTurn("收到李纲札子，主战派 +5","good"); },
+    result:"札子末尾写着一句：‘臣不望生还，但望陛下北望。’你把札子收进袖中。"
+  },
+  {
+    id:"zhaoding", name:"赵鼎", title:"淮南两路转运使", face:"civil",
+    lines:[
+      "赵鼎是个稳重人，开口便是庶务：“陛下，下蔡存粮可支两月，若金军围城日久，恐有乏粮之虞。臣已遣人往庐州调粮。”",
+      "你点点头。赵鼎从不许诺奇迹，但他承诺的事，向来办得到。"
+    ],
+    effect(){ addFaction("mid", +4); addFaction("peace", +2); logTurn("召见赵鼎问粮事，中间派 +4","good"); },
+    result:"赵鼎退下前又补了一句：“陛下若能守到下月，臣便能筹足三个月的粮。”"
+  },
+  {
+    id:"zhangjun2", name:"张浚", title:"御史中丞", face:"civil",
+    lines:[
+      "张浚是揣摩上意的好手，进门便压低声音：“陛下，臣昨夜听得消息：扬州有几位官儿，正议着‘若金军破城，当奉陛下巡幸东南’。”",
+      "“哦？”你不动声色，“那你觉得，朕该如何？”他正色道：“陛下若此时露出半分南意，朝中主和之声必起。臣请陛下当众言战！”"
+    ],
+    effect(){ addFaction("war", +4); logTurn("召见张浚，得朝中秘闻，主战派 +4","good"); },
+    result:"张浚的眼睛里闪着光——他赌你会赢，所以把宝全押在你身上。"
+  },
+  {
+    id:"lvhaowen", name:"吕好问", title:"都省首相", face:"civil",
+    lines:[
+      "吕好问慢吞吞地进来，先给你行了个大礼：“陛下这几日辛苦了。”",
+      "“吕卿辛苦。”你扶起他，“朝中可还安稳？”他想了想，道：“有陛下坐镇，便安稳。只是——老臣斗胆，陛下可否少发几道‘必战’的旨意？朝中有些臣子，怕。”",
+      "你看着这位温吞的老臣，忽然明白了什么叫‘缓兵之计’——他是在替你稳住那些怕的人。"
+    ],
+    effect(){ addFaction("mid", +5); addFaction("peace", +2); G.authority = clamp(G.authority+2,0,100); logTurn("召见吕好问，中间派 +5，皇权威势 +2","good"); },
+    result:"吕好问颤巍巍退下。这个看似平庸的老臣，是你与朝堂之间最厚的那层缓冲。"
+  },
+  {
+    id:"yangqizhong", name:"杨沂中", title:"御前班直统制 · 领皇城司", face:"military",
+    lines:[
+      "杨沂中进来时带了一阵风，压低声音道：“陛下，探事司今日又理出几条线。朝中有人私下与刘光世通书，臣已遣人盯着。”",
+      "“刘光世……”你沉吟。杨沂中道：“陛下放心，有臣在，他翻不出天。只是臣请陛下莫急，容臣再钓几日，看他还勾着谁。”"
+    ],
+    effect(){ logTurn("召见杨沂中，皇城司情报网再加一道","good"); G.flag_yang = true; },
+    result:"杨沂中是你在刀尖上的那只手。皇城司的网撒下去，便没有再收回来的道理。"
+  },
+  {
+    id:"linjingmo", name:"林景默", title:"翰林学士 · 内制", face:"civil",
+    lines:[
+      "林景默是个闷葫芦，进来先奉上一卷文书：“陛下，这是臣拟的《谕淮北军民诏》。‘金人虽强，天道必还；中原虽破，人心未死。’——陛下看可好？”",
+      "你读罢，点头：“好。再加一句：‘朕与诸卿共守此城，城在人在。’”他应声提笔，墨迹如新。"
+    ],
+    effect(){ G.authority = clamp(G.authority+2,0,100); logTurn("召见林景默改诏书，皇权威势 +2","good"); },
+    result:"诏书既成，传檄四方。文人的笔，有时比刀剑更能聚人心。"
+  }
+];
+
+/* 嫔妃立绘：抽象古风剪影（发髻+衣领，不画五官） */
+const PORTRAITS = {
+  wufuren: `<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:106px;display:block;margin:0 auto">
+    <ellipse cx="60" cy="50" rx="22" ry="26" fill="#f0d8c0"/>
+    <path d="M38 45 Q38 20 60 18 Q82 20 82 45 L80 40 Q75 25 60 24 Q45 25 40 40 Z" fill="#2a2230"/>
+    <circle cx="60" cy="18" r="6" fill="#2a2230"/>
+    <path d="M30 160 L35 95 Q45 85 60 85 Q75 85 85 95 L90 160 Z" fill="#7fb8a5" opacity="0.85"/>
+    <path d="M50 95 L60 110 L70 95" stroke="#5a8a75" stroke-width="1.5" fill="none"/>
+  </svg>`,
+  panxianfei: `<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:106px;display:block;margin:0 auto">
+    <ellipse cx="60" cy="50" rx="22" ry="26" fill="#f0d8c0"/>
+    <path d="M38 45 Q35 15 60 12 Q85 15 82 45 L80 38 Q75 22 60 20 Q45 22 40 38 Z" fill="#3a2a2a"/>
+    <circle cx="60" cy="10" r="5" fill="#c9a84c"/>
+    <path d="M30 160 L35 95 Q45 85 60 85 Q75 85 85 95 L90 160 Z" fill="#e8c89a" opacity="0.85"/>
+    <path d="M50 95 L60 110 L70 95" stroke="#b89a6a" stroke-width="1.5" fill="none"/>
+  </svg>`,
+  lianghongyu: `<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:106px;display:block;margin:0 auto">
+    <ellipse cx="60" cy="50" rx="22" ry="26" fill="#f0d8c0"/>
+    <path d="M38 45 Q38 22 60 20 Q82 22 82 45 L80 40 Q75 28 60 26 Q45 28 40 40 Z" fill="#1a1a1a"/>
+    <path d="M50 18 L60 10 L70 18" stroke="#c0c0c0" stroke-width="2" fill="none"/>
+    <path d="M30 160 L35 95 Q45 85 60 85 Q75 85 85 95 L90 160 Z" fill="#c04040" opacity="0.85"/>
+    <path d="M50 95 L60 110 L70 95" stroke="#8a2a2a" stroke-width="1.5" fill="none"/>
+  </svg>`
+};
+
+/* ================================================================
+   后宫对话 —— 源自原文：吴夫人（珍珠吴氏）、潘贤妃（皇嗣生母）
+   ================================================================ */
+// 古风立绘：屏风后剪影（不露骨，仅轮廓）
+function haremPortrait(personId){
+  const colors = {
+    wufuren:  { robe:"#c9a96e", sleeve:"#e8d5a8", bg:"#2a2418" },
+    panxianfei:{ robe:"#8a9bb8", sleeve:"#c8d4e8", bg:"#1e2430" },
+    lianghongyu:{ robe:"#7a8a6e", sleeve:"#b8c8a8", bg:"#1e2820" }
+  };
+  const c = colors[personId] || colors.wufuren;
+  return `<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:120px;border-radius:8px;background:linear-gradient(180deg,${c.bg} 0%,#0f1218 100%);display:block">
+    <!-- 屏风 -->
+    <rect x="10" y="10" width="100" height="140" fill="none" stroke="#3a3020" stroke-width="1"/>
+    <!-- 发髻 -->
+    <circle cx="60" cy="40" r="10" fill="${c.robe}"/>
+    <!-- 身体轮廓 -->
+    <path d="M45,55 Q40,90 35,140 L85,140 Q80,90 75,55 Z" fill="${c.robe}" opacity="0.85"/>
+    <!-- 宽袖 -->
+    <path d="M45,60 Q30,80 28,110 Q35,105 42,95 Z" fill="${c.sleeve}" opacity="0.7"/>
+    <path d="M75,60 Q90,80 92,110 Q85,105 78,95 Z" fill="${c.sleeve}" opacity="0.7"/>
+    <!-- 发簪 -->
+    <line x1="52" y1="36" x2="68" y2="36" stroke="#d4af37" stroke-width="1.5"/>
+  </svg>`;
+}
+const HAREM = [
+  {
+    id:"wufuren", name:"吴夫人（吴瑜）", title:"陛下身边人 · 珍珠吴氏",
+    topics:[
+      { title:"灯下问安", lines:[
+        "你走进后堂，吴夫人正在灯下补一件旧甲衣。见你来了，她放下针线，先斟了一碗热姜豉递过来：“陛下，城上风大，喝碗热的。”",
+        "你接过来喝了，忽然道：“吴瑜，若有一天，朕带着你们去东京，你怕不怕？”她笑了：“陛下去哪儿，臣妾就去哪儿。东京的宫墙，总比这帐篷暖些。”",
+        "——她没说出口的话是：只要跟在你身边，哪儿都一样。"
+      ], effect(){ G.popular = clamp(G.popular+3,0,100); G.spirit = clamp(G.spirit+2,0,100); logTurn("后宫问安吴夫人，民心 +3，士气 +2","good"); },
+      result:"姜豉的热气散在夜里。乱世里，这一碗热汤就是家的样子。" },
+      { title:"闲话军中", lines:[
+        "吴夫人替你揉着眉心，忽然道：“臣妾今日在厨下，听两个老军汉聊天。一个说他儿子在张俊部下，一个说他儿子在韩世忠部下——两人争着说自己儿子的上官更能打。”",
+        "你笑了：“那谁说赢了？”她也笑：“说张俊的那个嗓门大。不过说韩世忠的那个补了一句：‘韩夫人比韩太尉还猛。’”",
+        "——军中的士气，有时是这些家长里短撑起来的。"
+      ], effect(){ G.spirit = clamp(G.spirit+3,0,100); logTurn("吴夫人转述军中闲话，士气 +3","good"); },
+      result:"你让她明日把这话传给杨沂中——士气这种东西，要靠它自己长。" },
+      { title:"夜读《前赤壁赋》", lines:[
+        "入夜，吴夫人捧出一卷旧书：“陛下今夜还观书么？妾为陛下诵一段？”她也不待你答应，便低声诵道：“‘客亦知夫水与月乎？逝者如斯，而未尝往也；盈虚者如彼，而卒莫消长也。’”",
+        "你听着，忽然觉得这乱世里能有一夜安稳，也是难得。她诵完，抬眼看你：“陛下，苏轼写这篇时，也被贬在外。可他还能写这样的文字。”",
+        "你点点头。她没再说什么，只把茶又续了一杯。"
+      ], effect(){ G.virtue = clamp(G.virtue+2,0,100); logTurn("与吴夫人夜读，君德 +2","good"); },
+      result:"墨香与茶香混在一处。这样的夜晚，在行军途中是奢侈。" }
+    ]
+  },
+  {
+    id:"panxianfei", name:"潘贤妃", title:"皇嗣生母",
+    topics:[
+      { title:"逗弄皇嗣", lines:[
+        "潘贤妃抱着皇嗣坐在榻边，见你进来，起身行礼：“陛下今日可还安好？”她说话总是这样稳妥，不争不抢，像一汪静水。",
+        "“都好。”你逗了逗孩子，又看向她，“朕近来忙于军务，后宫冷落了你。”她摇头：“陛下在前线，便是臣妾最大的安稳。只盼陛下……万勿以身犯险。”",
+        "你知道她真正想说的是什么——她怕你死。这个从靖康之乱里活过来的女人，怕极了失去。"
+      ], effect(){ G.authority = clamp(G.authority+1,0,100); G.popular = clamp(G.popular+2,0,100); logTurn("后宫问安潘贤妃，皇权威势 +1，民心 +2","good"); },
+      result:"潘贤妃没有多留你。她知道，行在更需要你。" },
+      { title:"提及靖康旧痛", lines:[
+        "孩子睡着后，潘贤妃替你脱下披风，忽然低声道：“陛下……臣妾昨日梦见了渊圣皇帝。”你一怔。她道：“梦见他在五国城的雪地里，回头看了臣妾一眼。”",
+        "帐中一时静得能听见灯花爆开的声音。你握住她的手：“都过去了。朕在，就不会再让你们受那等苦。”她点头，眼泪却落了下来。",
+        "——这个女人把靖康之痛藏得太深，只在梦里敢露出来。"
+      ], effect(){ G.virtue = clamp(G.virtue+1,0,100); G.authority = clamp(G.authority+1,0,100); logTurn("潘贤妃夜话靖康旧痛，君德 +1，权威 +1","good"); },
+      result:"你送她回后帐时，在帐外站了许久。这个江山，不只是你的，也是她们的。" },
+      { title:"叮嘱起居饮食", lines:[
+        "潘贤妃又摆出一份食单：“陛下这几日瘦了。厨下新蒸了栗糕，陛下带两块去政事堂罢。夜里若还议事，记得喝碗热汤。”",
+        "你接过食单，上面一行一行写得极细：辰时粥、午时饭、酉时点、亥时汤。你笑：“你这是把朕当孩子照管。”她低头：“陛下是天子，可也是臣妾的夫主。”",
+        "——后宫里，她是最不会说漂亮话的那个，却把你的日子记得最牢。"
+      ], effect(){ G.spirit = clamp(G.spirit+2,0,100); G.popular = clamp(G.popular+1,0,100); logTurn("潘贤妃叮嘱起居，士气 +2，民心 +1","good"); },
+      result:"栗糕的甜，是乱世里一点小小的、确定的东西。" }
+    ]
+  },
+  {
+    id:"lianghongyu", name:"梁夫人（梁红玉）", title:"韩世忠之妻 · 随军",
+    topics:[
+      { title:"请命擂鼓", lines:[
+        "你巡视军帐时，正撞见梁红玉在教几个军妇擂鼓。她见你来了，也不回避，抱拳道：“陛下，臣妾请命：金军若来，臣妾愿亲自击鼓助战！”",
+        "韩世忠在旁苦笑：“陛下莫听她……”你却认真地看着她：“好。到那一日，朕亲耳听你鼓声。”她眼睛亮了，重重点头。"
+      ], effect(){ G.spirit = clamp(G.spirit+5,0,100); logTurn("军中见梁夫人请战，士气 +5","good"); },
+      result:"梁红玉擂鼓的英姿，是淮上一道谁都忘不了的风景。" },
+      { title:"论兵阵", lines:[
+        "梁红玉指着沙盘上的淮河线：“陛下，臣妾虽不识字，却随韩太尉行阵多年。金军若渡淮，必走泗州。泗州若失，楚州便成孤悬。”",
+        "你皱眉：“泗州现有多少人？”她摇头：“不满一千。臣妾请陛下遣一将守泗州，不必多兵，只守得住渡口十日即可。”",
+        "——这妇人说的不是妇人之见，是行阵之见。"
+      ], effect(){ G.spirit = clamp(G.spirit+2,0,100); logTurn("梁夫人论泗州防务，士气 +2","good"); },
+      result:"你当日便把杨沂中召来，把泗州的防务叮嘱了一遍。" },
+      { title:"说韩世忠", lines:[
+        "梁红玉压低声音：“陛下，臣妾有一句话，不知当讲不当讲。”你示意她说。“韩太尉……他是粗人，战场上是一把刀，可朝堂上不是。陛下若用他，便只用他的刀，莫让他去写文章。”",
+        "你笑了：“他写文章，确是委屈了。”梁红玉也笑：“他昨夜写了一道札子，三个错字，两个不通。臣妾替他重写了。”",
+        "——韩世忠有此妻，是他的福，也是你的福。"
+      ], effect(){ G.authority = clamp(G.authority+1,0,100); G.spirit = clamp(G.spirit+2,0,100); logTurn("梁夫人说韩世忠，权威 +1，士气 +2","good"); },
+      result:"你后来读韩世忠的札子，字迹端正多了——必是梁红玉替他改过。" }
+    ]
+  }
+];
+
+/* ================================================================
+   后宫起居 · 选妃 / 浣衣娘 / 翻花牌 / 酒池肉林
+   每项皆牵动「君德」（昏庸↔贤能）：享乐一时，德望日削。
+   ================================================================ */
+const PLEASURES = [
+  {
+    id:"select-beauty", kind:"礼制", name:"民间选妃",
+    title:"诏选良家女",
+    lines:[
+      "礼部呈上度牒式样的选妃簿册：今岁民间良家女，年十三至二十者，择端丽端正者充后宫。簿册扉页上，还压着一份开封失陷前的旧例。",
+      "内侍低声道：“陛下若准，行在便要设选妃所，司礼官持簿往民间问讯。只是……如今行在窄小，宫人多了，粮也要多开一份口粮。”"
+    ],
+    cost: 30000,
+    effects:{ virtue:-4, popular:-2, peace:+3 },
+    effect_label:"君德 −4 · 民心 −2 · 主和派 +3（以宫室之乐安人心）",
+    result:"选妃所设于下蔡城南，报名的民女寥寥——乱世里，谁愿意把女儿送进一个朝不保夕的行在？你看着簿册，忽然有些索然。"
+  },
+  {
+    id:"wash-girl", kind:"宫人", name:"浣衣娘",
+    title:"驾临浣衣局",
+    lines:[
+      "内侍低声谄笑：“陛下，浣衣局新到了一批拣选来的宫女，皆是各处州县送来的良家子。其中颇有几个颜色好的……陛下可要去看看？”",
+      "你鬼使神差，便随他去了浣衣局。河边一排排浣衣女子见你驾到，吓得跪伏一片。你挑了两个模样周正的，命人带回后苑。",
+      "出浣衣局时，那老内侍笑得愈发谄媚。你望着自己的手，忽然想起刚到下蔡那天，张俊在城头立得笔直的身影——心里像被什么东西硌了一下。"
+    ],
+    cost: 0,
+    effects:{ virtue:-4, popular:-2, mid:-3 },
+    effect_label:"君德 −4 · 民心 −2 · 中间派 −3（荒淫失度）",
+    result:"挑回去的两宫女当夜便分了名分。次日御营里有人议论纷纷——官家在城头说了'城在人在'，转头却在浣衣局挑人。"
+  },
+  {
+    id:"flower-card", kind:"起居", name:"翻花牌",
+    title:"宫闱侍夜",
+    lines:[
+      "入夜，内侍捧着鎏金花牌奉到你面前——行在虽小，旧例还在。你随手翻起一张，牌上刻着“吴氏”二字。",
+      "吴夫人闻召而来，只着家常衣，手里却还攥着半卷《前赤壁赋》：“陛下今日观书否？若未观，妾为陛下诵一段……”",
+      "红烛摇影，你听着她低诵苏轼的文字，忽然觉得，这乱世里能有一夜安稳，也是难得。"
+    ],
+    cost: 10000,
+    effects:{ virtue:-3, spirit:+3, authority:-1 },
+    effect_label:"君德 −3 · 士气 +3 · 皇权威势 −1（内帑用度）",
+    result:"翌日清晨，御史台有人递了道温和的札子，劝陛下“宫闱从简”。你把札子压下了，却也在心里记了一笔。"
+  },
+  {
+    id:"feast", kind:"享乐", name:"酒池肉林",
+    title:"通宵饮宴",
+    lines:[
+      "有内侍献上“琼林宴”旧例，称乱世更该及时行乐。你一时兴起，命置酒高会，帐中歌舞彻夜，诸将亦有醉者。",
+      "次日午时，你才从宿醉中醒来。军报已堆在案头积了三份，张俊的请饷札子也压在最底下。",
+      "帐外传来窃窃私语——有老兵叹道：“官家若这般下去，下蔡怕是要守不住了。”"
+    ],
+    cost: 20000,
+    effects:{ virtue:-10, popular:-5, spirit:+5, mid:-5 },
+    effect_label:"君德 −10 · 民心 −5 · 士气 +5 · 中间派 −5",
+    result:"酒醒之后，你望着满案积压的军报良久。享乐一时，代价却是日积月累——君德之削，正在于此。"
+  }
+];
+
+/* ================================================================
+   游戏状态
+   ================================================================ */
+const SAVE_KEY = "shaosong-mud-p0-save";
+let G = null;
+
+function newGame(){
+  return {
+    ruleset: RULESET_ID,
+    phase: "prologue",        // prologue | play | battle | ending
+    turn: 0,
+    year: 1,                  // 建炎X年
+    treasury: CONFIG.treasury_start,
+    authority: 40,            // 皇权威势
+    popular: 55,              // 民心
+    virtue: 60,               // 君德 0-100（昏庸↔贤能）
+    factions: { war:40, peace:55, mid:50 },
+    // 下蔡守军
+    troops: 30000,
+    train: 65, spirit: 70, equip: 60,
+    // 兵种：步兵 inf（默认）、骑兵 cav、弓兵 archer
+    cav: 3000, archer: 5000,
+    defend: CONFIG.terrain_defend,
+    general: "zhangjun",
+    // 金军
+    jin_turns_left: CONFIG.jin_travel_turns,
+    jin_power: null,
+    // 事件标记
+    flag_kangli: false,       // 处置康履
+    flag_huang: false,        // 罢黄潜善
+    flag_ligang: false,       // 复用李纲
+    flag_bond: false,         // 发行国债
+    flag_duitian: false,      // 度田
+    flag_stance: null,        // 站队 war|peace|mid
+    ending_verdict: null,       // 下蔡决战 verdict，供时局图使用
+    used_this_turn: [],       // 本旬已用行动
+    quick_used: [],           // 本旬已用快速功能（intel/court/audience/harem）
+    intel_seen: [],           // 已见过的情报 id
+    court_seen: [],           // 已议过的议题 id
+    audience_seen: [],        // 已召见过的臣工 id
+    harem_seen: [],           // 已探视过的后宫 id
+    intel_log: [],            // 情报简报存档
+    battle_done: false,
+    ending: null,
+    log: [],
+    turn_log: []
+  };
+}
+
+/* ================================================================
+   工具
+   ================================================================ */
+function power(troops, train, spirit, equip, cmd, terrain){
+  return troops * (0.5 + train/200) * (0.5 + spirit/200) * (0.5 + equip/200) * (1 + (cmd-CONFIG.cmd_base)/100) * terrain;
+}
+function fmt(n){
+  return n.toLocaleString("zh-CN");
+}
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+function factionMax(){ return 100; }
+function addFaction(key, delta){
+  G.factions[key] = clamp(G.factions[key] + delta, 0, 100);
+}
+function logTurn(text, cls){
+  G.turn_log.push({ t:`第${G.turn}旬`, txt:text, cls:cls||"" });
+  if(G.turn_log.length > 60) G.turn_log.shift();
+}
+function logGlobal(text, cls){
+  G.log.push({ t:`第${G.turn}旬`, txt:text, cls:cls||"" });
+  if(G.log.length > 80) G.log.shift();
+}
+function costMoney(amount){
+  if(G.treasury < amount){
+    const deficit = amount - G.treasury;
+    G.treasury = 0;
+    addFaction("mid", -5);
+    logTurn(`国库不足，强征摊派，中间派支持 -5`, "bad");
+    return false;
+  }
+  G.treasury -= amount;
+  return true;
+}
+
+/* ================================================================
+   战力估算
+   ================================================================ */
+function songPowerNow(){
+  const g = GENERALS[G.general];
+  const loyalty = (g.loyalty || 80) / 100;
+  return power(G.troops, G.train, G.spirit, G.equip, g.cmd, G.defend) * (0.8 + 0.2*loyalty);
+}
+function jinPowerNow(){
+  const season = seasonOf(G.turn);
+  return power(CONFIG.jin_troops, CONFIG.jin_train, CONFIG.jin_spirit, CONFIG.jin_equip, CONFIG.jin_cmd, CONFIG.terrain_attack) * season.jinBoost;
+}
+
+/* ================================================================
+   渲染
+   ================================================================ */
+const $ = id => document.getElementById(id);
+function renderHeader(){
+  $("h-year").textContent = G.year + " 年";
+  $("h-turn").textContent = G.turn;
+  $("h-treasury").textContent = fmt(G.treasury);
+  $("h-authority").textContent = G.authority;
+}
+function renderSidebar(){
+  $("s-treasury").textContent = fmt(G.treasury) + " 贯";
+  const cf = CONFIG.income_per_turn - CONFIG.expense_per_turn;
+  $("s-cashflow").textContent = (cf>=0?"+":"") + fmt(cf) + " 贯";
+  $("s-cashflow").className = cf>=0 ? "v good" : "v danger";
+  $("s-authority").textContent = G.authority;
+  $("b-authority").style.width = G.authority + "%";
+  $("s-morale").textContent = G.popular;
+  $("s-virtue").textContent = G.virtue;
+  $("b-virtue").style.width = G.virtue + "%";
+  ["war","peace","mid"].forEach(k=>{
+    $(`fb-${k}`).style.width = G.factions[k] + "%";
+    $(`n-${k}`).textContent = G.factions[k];
+  });
+  const g = GENERALS[G.general];
+  $("s-troops").textContent = fmt(G.troops) + " 人";
+  $("s-train").textContent = G.train; $("b-train").style.width = G.train + "%";
+  $("s-spirit").textContent = G.spirit; $("b-spirit").style.width = G.spirit + "%";
+  $("s-equip").textContent = G.equip; $("b-equip").style.width = G.equip + "%";
+  $("s-defend").textContent = G.defend.toFixed(2);
+  $("s-power").textContent = fmt(Math.round(songPowerNow()));
+  if(typeof renderMiniMap === "function") renderMiniMap();
+}
+function renderLog(){
+  const box = $("log");
+  const html = G.turn_log.slice().reverse().map(l=>
+    `<div class="line ${l.cls}"><span class="t">${l.t}</span><span class="txt">${l.txt}</span></div>`
+  ).join("");
+  box.innerHTML = html || `<div class="line"><span class="t">—</span><span class="txt">尚无战报</span></div>`;
+}
+
+/* ================================================================
+   序章
+   ================================================================ */
+function startPrologue(){
+  G.phase = "prologue";
+  const stage = $("stage");
+  stage.innerHTML = `
+    <div class="turn-head"><div class="tt">序章 · 明道宫</div><div class="td">建炎元年秋 · 淮南东路亳州卫真县</div></div>
+    <div class="prologue">
+      <p>秋风飒飒，日暖斜阳。你从明道宫九龙井边被人救起——就在刚才，你一头栽进了这口井里，当着数百文武的面。</p>
+      <p>现在你知道自己是谁了：<span class="emphasis">赵玖，大宋官家赵构。</span>而你的记忆里，还留着另一个时代的气息。靖康之变，二圣北狩，金军铁骑已在黄河以北逡巡。这具身体登基不过两月，行在文武正为"往南阳还是往扬州"争执不休。</p>
+      <p>内侍省大押班<span class="emphasis">康履</span>、宰相<span class="emphasis">黄潜善</span>、枢相<span class="emphasis">汪伯彦</span>把持着你的视野。他们认定你应该尽快南逃扬州，把淮河以北让给金人。</p>
+      <p>你知道——历史上那个赵构会逃，而这一次，你决定不逃。</p>
+      <p class="emphasis">第一个选择摆在面前：如何处置这三位把持朝局的旧臣？</p>
+    </div>
+    <div class="row" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+      <button class="btn primary" onclick="handlePrologue('kill')">诛杀康履，震慑内侍</button>
+      <button class="btn" onclick="handlePrologue('soft')">留用三人，以稳为先</button>
+      <button class="btn jade" onclick="handlePrologue('balance')">罢黄留汪，分化瓦解</button>
+    </div>`;
+}
+
+function handlePrologue(choice){
+  const stage = $("stage");
+  if(choice === "kill"){
+    G.flag_kangli = true;
+    G.authority = clamp(G.authority + 15, 0, 100);
+    addFaction("war", +12);
+    addFaction("peace", -10);
+    addFaction("mid", -3);
+    logTurn("你命杨沂中拿下康履，当众斩于阶下，内侍省一时噤声。主战派 +12，主和派 -10，皇权威势 +15", "good");
+    stage.innerHTML = `
+      <div class="turn-head"><div class="tt">序章 · 明道宫</div><div class="td">建炎元年秋</div></div>
+      <div class="prologue">
+        <p>你望着康履滚落的人头，缓缓开口：<span class="emphasis">"国家养士，不是用来南逃的。"</span></p>
+        <p>殿中一片寂静。黄潜善的脸色变得很难看，汪伯彦低头不语。你听见身后有武将轻轻吐了一口气——那是杨沂中。</p>
+        <p>当夜，一份军报送到行在：<span class="emphasis">金军东路军约两万余骑，由四太子完颜宗弼（兀术）率领，已经渡河南下。</span>先锋正朝京东两路扑来。</p>
+        <p>黄潜善跪请南巡扬州。你看着他，想起另一个时空中那个一路南逃到海上的赵构——然后你笑了。</p>
+        <p class="emphasis">"朕不去扬州。朕去下蔡，与张俊一同守淮。"</p>
+        <p>行在震动。但你心意已决。你需要在金军兵临城下之前，把下蔡守军打造得足够强——或至少，足够硬。</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+        <button class="btn primary" onclick="beginPlay()">出发 · 前往下蔡</button>
+      </div>`;
+  }
+  if(choice === "soft"){
+    G.authority = clamp(G.authority + 2, 0, 100);
+    addFaction("peace", +5);
+    addFaction("mid", +3);
+    logTurn("你留用三人，暂且相安。主和派 +5，中间派 +3", "");
+    stage.innerHTML = `
+      <div class="turn-head"><div class="tt">序章 · 明道宫</div><div class="td">建炎元年秋</div></div>
+      <div class="prologue">
+        <p>你温言抚慰了康履与黄潜善，稳住朝局。但你知道，南逃的声音不会消失——它只会沉入暗处，等一个时机。</p>
+        <p>当夜，军报送到：<span class="emphasis">金军东路军约两万余骑，由兀术率领渡河南下，先锋直指京东。</span></p>
+        <p>黄潜善再次跪请南巡。你沉默片刻，压下心头烦躁：<span class="emphasis">"朕去下蔡，守淮。"</span></p>
+        <p>行在文武面面相觑，最终还是随你动身。康履在身后悄悄望了你一眼——那眼神让你后背发凉。你留着他，但你知道，这个人迟早是个祸害。</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+        <button class="btn primary" onclick="beginPlay()">出发 · 前往下蔡</button>
+      </div>`;
+  }
+  if(choice === "balance"){
+    G.flag_huang = true;
+    G.authority = clamp(G.authority + 8, 0, 100);
+    addFaction("war", +8);
+    addFaction("peace", -8);
+    addFaction("mid", +4);
+    logTurn("你罢去黄潜善相位，留汪伯彦掌枢密以安人心。主战派 +8，主和派 -8，皇权威势 +8", "good");
+    stage.innerHTML = `
+      <div class="turn-head"><div class="tt">序章 · 明道宫</div><div class="td">建炎元年秋</div></div>
+      <div class="prologue">
+        <p>你以"奉养太上、休养病体"为由，罢去黄潜善相位，却留下汪伯彦执掌枢密院——既敲山震虎，又不过分惊动扬州一党。</p>
+        <p>黄潜善走时脸色铁青，一言不发。你望着他的背影，想起历史上那个一路主导南逃的宰相，此刻终于被移出了权力中心。</p>
+        <p>当夜，军报送到：<span class="emphasis">金军东路军两万余骑由兀术率领渡河南下。</span></p>
+        <p>新任宰执们还在观望，你已拍板：<span class="emphasis">"去下蔡，守淮。"</span></p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+        <button class="btn primary" onclick="beginPlay()">出发 · 前往下蔡</button>
+      </div>`;
+  }
+  renderHeader(); renderSidebar();
+  renderLog();
+}
+
+/* ================================================================
+   正式游戏循环
+   ================================================================ */
+function beginPlay(){
+  G.phase = "play";
+  G.turn = 0;
+  G.jin_turns_left = CONFIG.jin_travel_turns;
+  nextTurn();
+}
+
+function nextTurn(){
+  if(G.phase === "ending") return;
+  // 进入下一旬
+  G.turn += 1;
+  if(G.turn % 9 === 1 && G.turn > 1) G.year += 1;
+  G.used_this_turn = [];
+  // 财政结算
+  const cf = CONFIG.income_per_turn - CONFIG.expense_per_turn;
+  G.treasury += cf;
+  if(G.treasury < 0){
+    G.treasury = 0;
+    G.troops = Math.round(G.troops * 0.9);
+    addFaction("mid", -5);
+    logTurn("国库告罄！自动裁军一成，中间派支持 -5", "bad");
+  }
+  // 度田收入
+  if(G.flag_duitian){ G.treasury += 10000; }
+  // 国债摊还
+  if(G.flag_bond){ G.treasury -= 16667; if(G.treasury < 0) G.treasury = 0; }
+  // 城池兵粮消耗（所有城池）
+  consumeCityGrain();
+  // 下蔡被围：turn>=3 金军南压，额外耗粮
+  if(G.turn >= 3){
+    G.treasury -= 3000;
+    logTurn("金军压境，下蔡被围，民夫夺粮以充城守，国库 -3000 贯", "warn");
+  }
+  // 守将忠诚度小幅波动
+  ARMIES.forEach(a=>{
+    if(a.side === "song") a.loyalty = clamp(a.loyalty + (Math.random()*4-2), 30, 100);
+  });
+  // 粮尽易帜
+  const starved = resolveStarvation();
+  if(starved.length){
+    logTurn(`粮尽无援，${starved.join("、")}望风而降金`, "bad");
+  }
+  G.jin_turns_left -= 1;
+  renderHeader(); renderSidebar();
+  renderTurn();
+}
+
+function renderTurn(){
+  const stage = $("stage");
+  const jin = G.jin_turns_left;
+  const danger = jin <= 2;
+  const isLastPrep = jin === 0;
+
+  let html = `<div class="turn-head"><div class="tt">建炎${G.year}年 · 第 ${G.turn} 旬</div><div class="td">行在下蔡 · 金军距城 ${Math.max(jin,0)} 旬路程</div></div>`;
+
+  // 军报
+  if(danger && !isLastPrep){
+    html += `<div class="report">
+      <h4>紧急军报</h4>
+      <p>金军前锋铁骑已现于淮北烟尘之中！兀术亲领大队压阵，下蔡危在旦夕。城中军民皆望行在。——若再无准备，便只能凭现有军力迎战了。</p>
+    </div>`;
+  } else if(isLastPrep){
+    html += `<div class="report">
+      <h4>军报 · 金军已至</h4>
+      <p>淮北烟尘蔽日，金军大队已抵下蔡城下！完颜兀术立马阵前，命人叫阵。城头守军握紧了兵刃。——<b>本旬结束后将触发下蔡守卫战。</b></p>
+    </div>`;
+  } else if(jin === 4){
+    html += `<div class="report">
+      <h4>军报</h4>
+      <p>斥候回报：金军分兵两路，一路直扑下蔡，一路沿淮河搜集船只，欲断我后路。张俊请命：可先以水军截击其船队，挫其锐气。</p>
+    </div>`;
+  } else if(jin === 6){
+    html += `<div class="report">
+      <h4>军报</h4>
+      <p>金军已过界沟，京东两路告急。刘光世来报：六州军同时遭金军主力猛攻，难以支援。下蔡将成为独挡东线的唯一坚城。</p>
+    </div>`;
+  } else {
+    html += `<div class="report jade">
+      <h4>军报</h4>
+      <p>金军东路军约两万余骑正在南下，沿途扫荡京东州府。预计 <b>${jin}</b> 旬后兵临下蔡。你还有时间整军备战。</p>
+    </div>`;
+  }
+
+  // 朝报
+  const fw = G.factions.war, fp = G.factions.peace;
+  if(fp > fw + 10){
+    html += `<div class="report gold">
+      <h4>朝报</h4>
+      <p>主和一党私下串联："官家亲驻下蔡，实为孤注一掷，若金军合围，行在文武皆成齑粉。"扬州一系的官吏开始暗地收拾细软。</p>
+    </div>`;
+  } else if(fw > fp + 10){
+    html += `<div class="report gold">
+      <h4>朝报</h4>
+      <p>主战派声浪高涨："官家坐镇下蔡，中兴之象已现！"太学生伏阙上书，请朝廷发兵北上，直捣黄龙。</p>
+    </div>`;
+  } else {
+    html += `<div class="report gold">
+      <h4>朝报</h4>
+      <p>朝中议论纷纷，主战主和两派争执不下。吕好问居中调停，劝你以稳为先，先顾眼前战事。</p>
+    </div>`;
+  }
+
+  // 季节提示（金军秋来春去）
+  const season = seasonOf(G.turn);
+  if(season.key === "冬" && G.turn === 3){
+    html += `<div class="report">
+      <h4>季节</h4>
+      <p>入冬，黄河开始结冰。探事司急报：金军正在河北点集军马，准备踏冰南下。每年这个时候，他们都要来"打草谷"。</p>
+    </div>`;
+  } else if(season.key === "春" && G.turn === 6){
+    html += `<div class="report">
+      <h4>季节</h4>
+      <p>开春，按往年惯例金军该北归度夏了。但探事司急报：兀术所部非但不撤，反而在宿州一带增兵——他想追着官家过江。</p>
+    </div>`;
+  }
+
+  // 君德低：台谏警示
+  if(G.virtue < 40){
+    html += `<div class="report">
+      <h4>台谏警示</h4>
+      <p>御史中丞张浚领衔上章，谏言措辞已是克制，却仍藏不住忧虑："陛下宫闱用度日繁，恐失臣民之望。金虏在境，愿陛下以社稷为念。"——朝野皆知此章所指。</p>
+    </div>`;
+  } else if(G.virtue < 60){
+    html += `<div class="report">
+      <h4>台谏微言</h4>
+      <p>有台谏官在朝会上委婉进言，称"行在虽狭，宫禁亦宜从简"。吕好问替你圆了场，但你听得出来，朝中已有人在留意你的起居。</p>
+    </div>`;
+  } else if(G.virtue >= 85){
+    html += `<div class="report jade">
+      <h4>德望</h4>
+      <p>你节用爱人、亲问军士的消息传开，行在军民皆言"官家与士卒同甘苦"。宗泽在东京闻之，专门遣使来贺。</p>
+    </div>`;
+  }
+
+  // 事件
+  if(!G.flag_kangli && G.turn === 2){
+    html += `<div class="report">
+      <h4>宫中异动</h4>
+      <p>康履遣人往扬州方向送信，被你安插的班直截获。人赃并获，康履跪在帐前涕泪横流，只称是为陛下"探路"。</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn primary" onclick="eventKangli('kill')">斩！内侍乱政者死</button>
+        <button class="btn" onclick="eventKangli('spare')">贬去琼州，留其性命</button>
+      </div>
+    </div>`;
+  }
+  if(!G.flag_ligang && G.turn === 3){
+    html += `<div class="report">
+      <h4>朝中议论</h4>
+      <p>有人提起闲置在东南的<span class="emphasis">李纲</span>——靖康年间的主战旗帜，被罢相后郁郁不得志。如今国难当头，是否复用李纲，重振主战声气？</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn jade" onclick="eventLigang('use')">复用李纲，拜为平章</button>
+        <button class="btn" onclick="eventLigang('no')">暂不启用，恐其跋扈</button>
+      </div>
+    </div>`;
+  }
+  if(!G.flag_stance && G.turn === 5){
+    html += `<div class="report gold">
+      <h4>廷议 · 战和之争</h4>
+      <p>朝堂上爆发激烈争执。御史中丞张浚慷慨请战："官家坐镇于此，当募兵北上，直捣黄龙！"赵鼎则奏称："下蔡孤城，粮道未稳，宜先固守，再图进取。"</p>
+      <p>众臣都看向你——你必须表态。</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn primary" onclick="eventStance('war')">支持张浚 · 主战</button>
+        <button class="btn" onclick="eventStance('mid')">支持赵鼎 · 持重</button>
+        <button class="btn" onclick="eventStance('peace')">支持赵鼎 · 先稳后战</button>
+      </div>
+    </div>`;
+  }
+  if(G.turn === 7 && G.jin_turns_left === 1){
+    html += `<div class="report jade">
+      <h4>淮上水战</h4>
+      <p>斥候急报：金军搜罗船只欲渡淮断我后路。韩世忠请率水军连夜出击，焚其船队；张俊则请以浮桥诱敌，聚而歼之。</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn jade" onclick="eventWater('han')">遣韩世忠水军夜袭</button>
+        <button class="btn primary" onclick="eventWater('zhang')">用张俊浮桥诱敌计</button>
+      </div>
+    </div>`;
+  }
+
+  // 金军已至 → 触发战役
+  if(isLastPrep){
+    html += `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <button class="btn primary" style="font-size:15px;padding:10px 20px" onclick="triggerBattle()">迎接决战 · 下蔡守卫战</button>
+    </div>`;
+  }
+
+  html += `<div class="log" id="stage-log"></div>`;
+  stage.innerHTML = html;
+  renderActions();
+  renderHeader(); renderSidebar();
+}
+
+/* ---- 事件处理 ---- */
+function eventKangli(choice){
+  if(choice === "kill"){
+    G.flag_kangli = true;
+    G.authority = clamp(G.authority + 10, 0, 100);
+    addFaction("war", +6); addFaction("peace", -8);
+    logTurn("康履人头落地。内侍省自此不敢再妄议朝政。皇权威势 +10", "good");
+  } else {
+    G.flag_kangli = true;
+    addFaction("mid", +3);
+    logTurn("康履被贬琼州，捡回一条命。中间派 +3", "");
+  }
+  renderTurn();
+}
+
+function eventLigang(choice){
+  if(choice === "use"){
+    G.flag_ligang = true;
+    G.authority = clamp(G.authority + 5, 0, 100);
+    addFaction("war", +12); addFaction("peace", -10);
+    logTurn("李纲入朝拜平章军国重事，主战派 +12，主和派 -10", "good");
+  } else {
+    G.flag_ligang = true;
+    addFaction("peace", +3);
+    logTurn("你压下了复用李纲之议，主和派暗自松了口气。主和派 +3", "");
+  }
+  renderTurn();
+}
+
+function eventStance(choice){
+  G.flag_stance = choice;
+  if(choice === "war"){
+    addFaction("war", +10); addFaction("peace", -6);
+    logTurn("你在廷议上支持张浚：'抗金到底，直捣黄龙！' 主战派 +10，主和派 -6", "good");
+  } else if(choice === "mid"){
+    addFaction("mid", +6);
+    logTurn("你支持赵鼎持重之议：'先固守，再图进取。' 中间派 +6", "");
+  } else {
+    addFaction("peace", +8); addFaction("war", -4);
+    logTurn("你表态以稳为先。主和派 +8，主战派 -4", "bad");
+  }
+  renderTurn();
+}
+
+function eventWater(choice){
+  if(choice === "han"){
+    logTurn("韩世忠率水军夜袭金军船队，焚船数十，金军渡淮之谋受挫！守军士气 +5", "good");
+    G.spirit = clamp(G.spirit + 5, 0, 100);
+    addFaction("war", +3);
+  } else {
+    logTurn("张俊设浮桥诱敌，金军前锋半渡而击，斩获颇多！守军士气 +5", "good");
+    G.spirit = clamp(G.spirit + 5, 0, 100);
+    addFaction("war", +3);
+  }
+  renderTurn();
+}
+
+/* ================================================================
+   行动系统
+   ================================================================ */
+function buildActions(){
+  const acts = [];
+  const used = G.used_this_turn;
+  const has = key => used.includes(key);
+
+  // 练兵
+  acts.push({
+    key:"train", name:"练兵", cost:"1万贯/旬",
+    desc:`训练 +5（当前 ${G.train}）`,
+    can: !has("train") && G.treasury >= 10000,
+    run: ()=>{ G.treasury -= 10000; G.train = clamp(G.train + 5, 0, 100); logTurn("练兵，训练 +5", "good"); }
+  });
+  // 犒军
+  acts.push({
+    key:"spirit", name:"犒军", cost:"5万贯/旬",
+    desc:`士气 +10（当前 ${G.spirit}）`,
+    can: !has("spirit") && G.treasury >= 50000,
+    run: ()=>{ G.treasury -= 50000; G.spirit = clamp(G.spirit + 10, 0, 100); logTurn("犒赏三军，士气 +10", "good"); }
+  });
+  // 置办装备
+  acts.push({
+    key:"equip", name:"置办甲械", cost:"2.4万贯/旬",
+    desc:`装备 +5（当前 ${G.equip}）`,
+    can: !has("equip") && G.treasury >= 24000,
+    run: ()=>{ G.treasury -= 24000; G.equip = clamp(G.equip + 5, 0, 100); logTurn("置办甲胄弓弩，装备 +5", "good"); }
+  });
+  // 加固城防
+  acts.push({
+    key:"defend", name:"加固城防", cost:"8万贯",
+    desc:`守城系数 +0.05（当前 ${G.defend.toFixed(2)}），每局仅一次`,
+    can: !has("defend") && G.defend < 1.40 && G.treasury >= 80000,
+    run: ()=>{ G.treasury -= 80000; G.defend = Math.min(1.40, G.defend + 0.05); logTurn("加固城防，守城系数 +0.05", "good"); }
+  });
+  // 国债
+  if(!G.flag_bond){
+    acts.push({
+      key:"bond", name:"发行国债", cost:"支持度 -5 · 每旬摊还1.67万",
+      desc:"一次性筹款 30 万贯（《邸报》登报购买名单）",
+      can: !has("bond"),
+      run: ()=>{ G.flag_bond = true; G.treasury += 300000; addFaction("mid", -5); logTurn("发行国债，国库 +30万贯，中间派 -5", "bad"); }
+    });
+  }
+  // 度田
+  if(!G.flag_duitian){
+    acts.push({
+      key:"duitian", name:"度田清丈", cost:"主和派 +10",
+      desc:"此后每旬收入 +1万贯，持续 12 旬",
+      can: !has("duitian"),
+      run: ()=>{ G.flag_duitian = true; addFaction("peace", +10); logTurn("推行度田，税入增加；主和派 +10（士绅不满）", "bad"); }
+    });
+  }
+  // 募兵
+  acts.push({
+    key:"recruit", name:"招募民兵", cost:"3万贯/旬",
+    desc:`兵力 +3000（当前 ${fmt(G.troops)}）`,
+    can: !has("recruit") && G.treasury >= 30000 && G.troops < 50000,
+    run: ()=>{ G.treasury -= 30000; G.troops += 3000; logTurn("招募民兵，兵力 +3000", "good"); }
+  });
+  // 港运粮草：从扬州/建康内渡往下蔡运粮（补国库）
+  // 金军压境（turn>=6，兀术南压至下蔡方向）时港运被切断
+  const harborCut = G.turn >= 6;
+  acts.push({
+    key:"harbor", name: harborCut ? "港运粮草（已截断）" : "港运粮草", cost:"2万贯/次",
+    desc: harborCut ? "兀术所部已截断扬楚漕路，内渡不通" : "自扬州、建康经内渡漕运粮米至下蔡，国库 +4万贯（绕陆运之险）",
+    can: !has("harbor") && !harborCut && G.treasury >= 20000,
+    run: ()=>{ G.treasury -= 20000; G.treasury += 40000; logTurn("港运自扬州、建康溯淮而上，粮米抵下蔡，国库 +2万贯", "good"); }
+  });
+  // 编练骑兵：买马练骑，每旬 +800 骑兵（需国库 1.5 万贯）
+  acts.push({
+    key:"cav-train", name:"编练骑兵", cost:"1.5万贯/旬",
+    desc:"自西边买马，编练骑兵。骑兵克步兵，野战纵横。当前骑兵 "+(G.cav/10000).toFixed(1)+" 万。",
+    can: !has("cav-train") && G.treasury >= 15000,
+    run: ()=>{
+      G.treasury -= 15000;
+      const gain = 800 + Math.floor(G.train*4);
+      G.cav += gain;
+      G.troops += gain;
+      logTurn(`编练骑兵：买马八百匹，新练骑兵 ${gain} 人`, "good");
+    }
+  });
+  // 野外结寨：本旬不主动出战，在淮上结寨休整
+  acts.push({
+    key:"camp", name:"野外结寨", cost:"本旬不动",
+    desc:"不主动出击，于淮上择地扎寨。训练 +8，士气 +8，金军推进如常。",
+    can: !has("camp"),
+    run: ()=>{
+      G.train = clamp(G.train+8,0,100);
+      G.spirit = clamp(G.spirit+8,0,100);
+      logTurn("于淮上择地结寨休整，训练 +8，士气 +8", "good");
+    }
+  });
+  // 北伐：派军北上收复相邻城池
+  acts.push({
+    key:"raid", name:"北伐 · 收复", cost:"兵力 -1万",
+    desc:"选一座相邻金占城池出击，野战对阵，胜则收城、缴获粮米",
+    can: !has("raid") && G.troops >= 20000,
+    run: ()=>openRaid()
+  });
+  return acts;
+}
+
+function renderActions(){
+  const box = $("actions");
+  const acts = buildActions();
+  const html = acts.map(a=>{
+    const cls = a.can ? "" : " disabled";
+    const flag = a.key==="train"||a.key==="spirit" ? " flag" : "";
+    return `<button class="action${cls}${flag}" data-k="${a.key}">
+      <span class="an">${a.name}</span>
+      <span class="ad">${a.desc}</span>
+      <span class="ac">${a.cost}</span>
+    </button>`;
+  }).join("");
+  box.innerHTML = html || `<p style="color:var(--gray);font-size:12px">本旬无可执行行动</p>`;
+  box.querySelectorAll(".action").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const key = btn.dataset.k;
+      const act = acts.find(a=>a.key===key);
+      if(!act || !act.can) return;
+      act.run();
+      G.used_this_turn.push(key);
+      renderHeader(); renderSidebar(); renderTurn();
+    });
+  });
+  renderQuick();
+  renderLog();
+}
+
+/* ================================================================
+   快速功能：情报 / 朝堂议事 / 召见 / 后宫
+   ================================================================ */
+function renderQuick(){
+  const box = $("quick");
+  if(!box) return;
+  const used = G.quick_used;
+  const defs = [
+    { key:"intel", name:"探事 · 情报", desc:"皇城司探金军朝局", tag:"1万贯" },
+    { key:"court", name:"政事堂 · 议事", desc:"御前议政拍板", tag:"每旬一次" },
+    { key:"audience", name:"召对 · 行在文武", desc:"问军心问朝局", tag:"每旬一次" },
+    { key:"harem", name:"后宫 · 起居", desc:"问安 · 选妃 · 翻牌", tag:"随时" },
+    { key:"map", name:"时局图", desc:"山河舆图 · 金宋对峙", tag:"随时" }
+  ];
+  box.innerHTML = defs.map(d=>{
+    const u = used.includes(d.key);
+    return `<button class="qbtn${u?" used":""}" data-q="${d.key}">
+      <span class="qn">${d.name}<span class="qtag">${d.tag}</span></span>
+      <span class="qd">${d.desc}</span>
+    </button>`;
+  }).join("");
+  box.querySelectorAll(".qbtn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = btn.dataset.q;
+      if(k==="map"){ openMap(); return; }
+      if(G.quick_used.includes(k)) return;
+      if(k==="intel") openIntel();
+      if(k==="court") openCourt();
+      if(k==="audience") openAudience();
+      if(k==="harem") openHarem();
+    });
+  });
+}
+
+/* ---- 情报 ---- */
+function openIntel(){
+  if(G.treasury < 10000){ toast("国库不足，探事司开不了工"); return; }
+  const body = $("intel-body");
+  const fresh = INTEL_POOL.filter(i=>!G.intel_seen.includes(i.id));
+  const pool = fresh.length ? fresh : INTEL_POOL;   // 全部见过则循环
+  body.innerHTML = `
+    <p style="font-size:12.5px;color:var(--gray)">杨沂中在阶下候着。你点点头，他低声道：“臣这就把探事司的人洒出去。”——花费 <b>1万贯</b>，得一份秘报。</p>
+    <div class="row">
+      <button class="btn jade" id="btn-intel-run">遣探事（1万贯）</button>
+      <button class="btn" onclick="closeMask('mask-intel')">罢了</button>
+    </div>`;
+  $("btn-intel-run").addEventListener("click", ()=>{
+    G.treasury -= 10000;
+    const item = pool[Math.floor(Math.random()*pool.length)];
+    G.intel_seen.push(item.id);
+    G.quick_used.push("intel");
+    G.intel_log.push({ turn:G.turn, title:item.title });
+    item.run();
+    body.innerHTML = `
+      <div class="intel-box">
+        <span class="it">【${item.tag} · ${item.title}】</span>
+        ${item.text}
+        <span class="il">→ ${item.effect_label}</span>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="closeMask('mask-intel')">收回</button>
+      </div>`;
+    renderHeader(); renderSidebar(); renderQuick(); renderLog();
+  });
+  $("mask-intel").classList.add("open");
+}
+
+/* ---- 朝堂议事 ---- */
+function openCourt(){
+  const body = $("court-body");
+  const fresh = COURT_TOPICS.filter(t=>!G.court_seen.includes(t.id));
+  const pool = fresh.length ? fresh : COURT_TOPICS;
+  // 取与当前局势相关的一个议题（或轮换）
+  const topic = pool[G.turn % pool.length];
+  G.court_seen.push(topic.id);
+  G.quick_used.push("court");
+  body.innerHTML = `
+    <div class="topic-head">今日议题 · ${topic.title}</div>
+    <p>${topic.intro}</p>
+    <div class="voices">
+      ${topic.voices.map(v=>`<div class="voice ${v.cls}"><b>${v.name}</b>${v.text}<span class="st">【${v.stance}】</span></div>`).join("")}
+    </div>
+    <div class="choice-list">
+      ${topic.options.map((o,i)=>`<button class="choice-item" data-o="${i}">
+        <span class="cn">${o.label}</span>
+        <span class="cd">${fmtEffects(o.effects)}${o.risk?" · 风险："+o.risk:""}</span>
+      </button>`).join("")}
+    </div>`;
+  body.querySelectorAll(".choice-item").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const o = topic.options[+btn.dataset.o];
+      applyCourtOption(topic, o);
+      renderHeader(); renderSidebar(); renderQuick(); renderLog();
+      body.innerHTML = `
+        <div class="dialogue war"><span class="who">御前 · 敕令既颁</span>
+        你听完众议，最终拍板：「${o.label}」。</div>
+        <div class="intel-box"><span class="it">【朝局变动】</span>${fmtEffects(o.effects)}${o.risk?" · 风险："+o.risk:""}</div>
+        <div class="row"><button class="btn" onclick="closeMask('mask-court')">散朝</button></div>`;
+    });
+  });
+  $("mask-court").classList.add("open");
+}
+
+const FX_CN = { treasury:"国库", authority:"皇权威势", popular:"民心", war:"主战派", peace:"主和派", mid:"中间派", spirit:"士气", train:"训练", equip:"装备", defend:"城防", troops:"兵力" };
+function fmtEffects(eff){
+  return eff.split(" ").map(seg=>{
+    const m = seg.match(/^([a-z]+)([+-])(\d+)$/);
+    if(!m) return seg;
+    const nm = FX_CN[m[1]] || m[1];
+    return `${nm} ${m[2]==="+"?"+":"-"}${m[3]}`;
+  }).join(" · ");
+}
+
+function applyCourtOption(topic, o){  const fx = {};
+  o.effects.split(" ").forEach(seg=>{
+    const m = seg.match(/^(treasury|authority|popular|war|peace|mid|spirit|train|equip|defend|troops)([+-])(\d+)$/);
+    if(m){
+      const k = m[1], delta = (m[2]==="+"?1:-1)*(+m[3]);
+      fx[k] = (fx[k]||0)+delta;
+    }
+  });
+  Object.keys(fx).forEach(k=>{
+    if(k==="treasury") G.treasury = Math.max(0, G.treasury + fx[k]);
+    else if(k==="authority") G.authority = clamp(G.authority+fx[k],0,100);
+    else if(k==="popular") G.popular = clamp(G.popular+fx[k],0,100);
+    else if(k==="war"||k==="peace"||k==="mid") addFaction(k, fx[k]);
+    else if(k==="spirit") G.spirit = clamp(G.spirit+fx[k],0,100);
+    else if(k==="train") G.train = clamp(G.train+fx[k],0,100);
+    else if(k==="equip") G.equip = clamp(G.equip+fx[k],0,100);
+    else if(k==="defend") G.defend = Math.min(1.40, G.defend + fx[k]*0.01);
+    else if(k==="troops") G.troops += fx[k];
+  });
+  logTurn(`御前议定「${o.label}」：${fmtEffects(o.effects)}`, "good");
+}
+
+/* ---- 召见行在文武 ---- */
+function openAudience(){
+  const body = $("audience-body");
+  const fresh = AUDIENCES.filter(a=>!G.audience_seen.includes(a.id));
+  const pool = fresh.length ? fresh : AUDIENCES;
+  body.innerHTML = `
+    <div class="choice-list">
+      ${pool.map((a,i)=>`<button class="choice-item" data-a="${i}">
+        <span class="cn">${a.name}</span>
+        <span class="cd">${a.title} · ${a.face==="military"?"武将":"文臣"}</span>
+      </button>`).join("")}
+    </div>`;
+  body.querySelectorAll(".choice-item").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const a = pool[+btn.dataset.a];
+      G.audience_seen.push(a.id);
+      G.quick_used.push("audience");
+      a.effect();
+      renderHeader(); renderSidebar(); renderQuick(); renderLog();
+      body.innerHTML = `
+        <div class="dialogue ${a.face==="military"?"war":""}">
+          <span class="who">${a.name} · ${a.title}</span>
+          ${a.lines.map(l=>`<p style="margin-bottom:8px">${l}</p>`).join("")}
+        </div>
+        <div class="intel-box"><span class="it">【召对之后】</span>${a.result}</div>
+        <div class="row"><button class="btn" onclick="closeMask('mask-audience')">退下</button></div>`;
+    });
+  });
+  $("mask-audience").classList.add("open");
+}
+
+/* ---- 时局图（山河舆图） ---- */
+// 城市节点：side=jin 金 / song 宋 / contested 淮南交战
+// 城池节点：side=jin 金 / song 宋 / contested 淮南交战；garrison 为驻军（万）/粮（万石）/将
+const MAP_NODES = [
+  // ===== 金占区（黄河以北 + 京东 + 西京）=====
+  { n:"燕山府", x:580, y:50,  side:"jin", terrain:"关隘", g:{ troop:20, grain:30, gen:"粘罕·兀术" }, quote:"辽国南京析津府，金人南进的王庭所在。", tier:"large", port:true },
+  { n:"太原府", x:180, y:105, side:"jin", terrain:"山地", g:{ troop:2,  grain:6,  gen:"" }, quote:"河东路首府，河东重镇。", tier:"large", port:false },
+  { n:"真定府", x:370, y:125, side:"jin", terrain:"平原", g:{ troop:1.5,grain:4,  gen:"" }, quote:"河北西路首府，西控太行。", tier:"large", port:false },
+  { n:"大名府", x:520, y:145, side:"jin", terrain:"平原", g:{ troop:2,  grain:5,  gen:"" }, quote:"北京大名府，河北东路都会。", tier:"large", port:false },
+  { n:"河间府", x:660, y:125, side:"jin", terrain:"平原", g:{ troop:1,  grain:3,  gen:"" }, quote:"河北东路，控扼契丹旧路。", tier:"medium", port:false },
+  { n:"沧州",   x:720, y:95,  side:"jin", terrain:"平原", g:{ troop:0.5,grain:2,  gen:"" }, quote:"滨海盐场，河北东路东端。", tier:"medium", port:false },
+  { n:"开德府", x:430, y:195, side:"jin", terrain:"平原", g:{ troop:0.8,grain:2,  gen:"" }, quote:"澶渊故地，北望大名，南蔽京师。", tier:"medium", port:false },
+  { n:"济南府", x:740, y:190, side:"jin", terrain:"平原", g:{ troop:1.5,grain:4,  gen:"" }, quote:"京东东路首府，泉城形胜。", tier:"large", port:false },
+  { n:"东平府", x:610, y:230, side:"jin", terrain:"平原", g:{ troop:1,  grain:3,  gen:"" }, quote:"京东西路重镇，漕运要冲。", tier:"medium", port:false },
+  { n:"青州",   x:820, y:220, side:"jin", terrain:"丘陵", g:{ troop:0.8,grain:2,  gen:"" }, quote:"古青州，京东东路大郡。", tier:"medium", port:false },
+  { n:"徐州",   x:710, y:295, side:"jin", terrain:"平原", g:{ troop:2,  grain:5,  gen:"" }, quote:"京东西路，汴水入泗要地。", tier:"medium", port:false },
+  { n:"淮阳军", x:790, y:335, side:"jin", terrain:"平原", g:{ troop:0.5,grain:1,  gen:"" }, quote:"下邳故地，京东东路东门。", tier:"medium", port:false },
+  { n:"开封府", x:480, y:270, side:"jin", terrain:"平原", g:{ troop:1,  grain:2,  gen:"" }, quote:"东京汴梁，天子旧都。建炎元年，宫阙已焚。", tier:"large", port:false },
+  { n:"河南府", x:360, y:260, side:"jin", terrain:"丘陵", g:{ troop:0.8,grain:2,  gen:"" }, quote:"西京洛阳，周汉故都。", tier:"large", port:false },
+  { n:"颍昌府", x:430, y:310, side:"jin", terrain:"平原", g:{ troop:0.5,grain:1,  gen:"" }, quote:"许州故地，京西南北门。", tier:"medium", port:false },
+  { n:"京兆府", x:150, y:285, side:"jin", terrain:"平原", g:{ troop:3,  grain:8,  gen:"" }, quote:"长安故都，永兴军路首府。", tier:"large", port:false },
+  { n:"凤翔府", x:110, y:335, side:"jin", terrain:"山地", g:{ troop:1,  grain:3,  gen:"" }, quote:"西府凤翔，控扼蜀口。", tier:"medium", port:false },
+
+  // ===== 淮南交战区 =====
+  { n:"光州",   x:320, y:380, side:"contested", terrain:"丘陵", g:{ troop:0.5,grain:1, gen:"" }, quote:"光州定城，淮南西路西门。", tier:"medium", port:false },
+  { n:"宿州",   x:590, y:355, side:"contested", terrain:"平原", g:{ troop:0.3,grain:0.5,gen:"" }, quote:"宿州符离，汴水入淮要冲。", tier:"medium", port:false },
+  { n:"泗州",   x:680, y:380, side:"contested", terrain:"渡口", g:{ troop:0.5,grain:1, gen:"" }, quote:"汴泗交汇，淮南东路北门。", tier:"medium", port:true },
+  { n:"下蔡",   x:470, y:395, side:"contested", isPlayer:true, terrain:"渡口", g:{ troop:3, grain:5, gen:"张俊" }, quote:"寿州治所，淮河北岸渡口。行在在此，与金军隔淮相峙。", tier:"medium", port:true },
+  { n:"楚州",   x:780, y:410, side:"contested", terrain:"水网", g:{ troop:0.8,grain:2, gen:"" }, quote:"山阳重镇，扼守淮扬。", tier:"medium", port:true },
+  { n:"海州",   x:860, y:370, side:"contested", terrain:"水网", g:{ troop:0.3,grain:0.5,gen:"" }, quote:"海州朐山，滨海边州。", tier:"medium", port:true },
+
+  // ===== 宋占区（淮河以南 + 京西 + 川陕）=====
+  { n:"襄阳府", x:170, y:450, side:"song", terrain:"山地", g:{ troop:2, grain:4, gen:"西军" }, quote:"京西南路首府，汉水上游，北通中原。", tier:"large", port:false },
+  { n:"唐州",   x:280, y:420, side:"song", terrain:"丘陵", g:{ troop:0.3,grain:1, gen:"" }, quote:"唐州泌阳，南阳东蔽。", tier:"medium", port:false },
+  { n:"庐州",   x:470, y:465, side:"song", terrain:"平原", g:{ troop:1, grain:2, gen:"" }, quote:"庐州合肥，淮南西路首府。", tier:"medium", port:false },
+  { n:"扬州",   x:680, y:470, side:"song", terrain:"水网", g:{ troop:1.5,grain:3, gen:"吕颐浩" }, quote:"淮南东路首府，淮左名都。", tier:"large", port:true },
+  { n:"滁州",   x:600, y:510, side:"song", terrain:"丘陵", g:{ troop:0.3,grain:1, gen:"" }, quote:"滁州清流，金陵北门。", tier:"medium", port:false },
+  { n:"和州",   x:620, y:540, side:"song", terrain:"渡口", g:{ troop:0.3,grain:1, gen:"" }, quote:"和州历阳，横江渡对采石。", tier:"medium", port:true },
+  { n:"江陵府", x:150, y:520, side:"song", terrain:"水网", g:{ troop:1, grain:3, gen:"" }, quote:"荆湖北路首府，长江中游重镇。", tier:"large", port:true },
+  { n:"鄂州",   x:270, y:540, side:"song", terrain:"水网", g:{ troop:1, grain:3, gen:"" }, quote:"鄂州江夏，武昌军垒，江汉要会。", tier:"large", port:true },
+  { n:"江州",   x:380, y:580, side:"song", terrain:"水网", g:{ troop:0.5,grain:2, gen:"" }, quote:"江州柴桑，江西北门。", tier:"medium", port:true },
+  { n:"建康府", x:560, y:540, side:"song", terrain:"水网", g:{ troop:2, grain:6, gen:"" }, quote:"南唐旧都，江南东路首府，龙蟠虎踞。", tier:"large", port:true },
+  { n:"平江府", x:700, y:560, side:"song", terrain:"水网", g:{ troop:1, grain:3, gen:"" }, quote:"姑苏繁华，两浙路大郡。", tier:"large", port:true },
+  { n:"临安",   x:780, y:590, side:"song", terrain:"水网", g:{ troop:0.5,grain:2, gen:"" }, quote:"杭州余杭，东南行在备选。", tier:"large", port:true },
+  { n:"绍兴府", x:820, y:620, side:"song", terrain:"丘陵", g:{ troop:0.3,grain:2, gen:"" }, quote:"越州会稽，两浙东路。", tier:"medium", port:true },
+  { n:"潭州",   x:280, y:620, side:"song", terrain:"丘陵", g:{ troop:0.5,grain:3, gen:"" }, quote:"长沙善化，荆湖南路首府。", tier:"medium", port:false },
+  { n:"洪州",   x:420, y:620, side:"song", terrain:"丘陵", g:{ troop:0.3,grain:2, gen:"" }, quote:"豫章南昌，江南西路首府。", tier:"medium", port:false },
+  { n:"兴元府", x:90,  y:470, side:"song", terrain:"山地", g:{ troop:1, grain:4, gen:"吴玠" }, quote:"汉中兴元，川陕门户，西军根本。", tier:"medium", port:false },
+  { n:"成都府", x:80,  y:600, side:"song", terrain:"平原", g:{ troop:0.5,grain:10,gen:"" }, quote:"成都沃野，天府之国，后方粮仓。", tier:"large", port:false },
+
+  // ===== 西夏（西北 · 草场产骑兵）=====
+  { n:"兴庆府", x:30,  y:180, side:"xia", terrain:"草场", g:{ troop:5, grain:4, gen:"西夏主" }, quote:"西夏王庭，贺兰山外，草场千里，铁骑所出。", tier:"large", port:false, feature:"草场" },
+  { n:"西凉府", x:60,  y:230, side:"xia", terrain:"草场", g:{ troop:2, grain:2, gen:"" }, quote:"凉州故地，河西都会，牧马监所在。", tier:"large", port:false, feature:"草场" },
+  { n:"甘州",   x:20,  y:260, side:"xia", terrain:"草场", g:{ troop:1, grain:1, gen:"" }, quote:"张掖甘州，河西走廊咽喉。", tier:"medium", port:false, feature:"草场" },
+  { n:"夏州",   x:90,  y:150, side:"xia", terrain:"沙地", g:{ troop:0.5,grain:0.5,gen:"" }, quote:"赫连勃勃故统万城，西夏龙兴之地。", tier:"medium", port:false, feature:"" },
+
+  // ===== 大理（西南）=====
+  { n:"大理城", x:120, y:690, side:"dali", terrain:"山地", g:{ troop:2, grain:3, gen:"段氏" }, quote:"大理国羊苴咩城，苍山洱海间，段氏数百年。", tier:"large", port:false, feature:"" },
+  { n:"善阐府", x:180, y:675, side:"dali", terrain:"丘陵", g:{ troop:0.8,grain:1, gen:"" }, quote:"拓东城，大理东鄙，通邕州之道。", tier:"medium", port:false, feature:"" },
+  { n:"腾冲",   x:80,  y:720, side:"dali", terrain:"山地", g:{ troop:0.3,grain:0.5,gen:"" }, quote:"腾冲府，西南极边，出象马。", tier:"medium", port:false, feature:"" },
+
+  // ===== 交趾（最南）=====
+  { n:"交州",   x:300, y:740, side:"jiaozhi", terrain:"水网", g:{ troop:1.5,grain:2, gen:"李乾德" }, quote:"交趾州，南疆极边，宋人视为化外。", tier:"medium", port:true, feature:"" },
+
+  // ===== 天下关隘（地形关隘，攻守异势）=====
+  { n:"居庸关", x:540, y:60,  side:"jin", terrain:"关隘", g:{ troop:1, grain:1, gen:"" }, quote:"太行八陉之最北口，控扼燕山府幽燕通道。", tier:"medium", port:false, feature:"关隘" },
+  { n:"雁门关", x:200, y:75,  side:"jin", terrain:"关隘", g:{ troop:0.8,grain:1, gen:"" }, quote:"北控云朔，南屏太原。杨家将昔日镇守处。", tier:"medium", port:false, feature:"关隘" },
+  { n:"潼关",   x:250, y:280, side:"jin", terrain:"关隘", g:{ troop:1.5,grain:2, gen:"" }, quote:"华山扼河而塞，关东入关中第一锁钥。", tier:"large", port:false, feature:"关隘" },
+  { n:"大散关", x:70,  y:430, side:"song", terrain:"关隘", g:{ troop:1, grain:2, gen:"" }, quote:"蜀口第一关，吴玠坚守于此，金人不能越。", tier:"medium", port:false, feature:"关隘" },
+  { n:"仙人关", x:100, y:400, side:"song", terrain:"关隘", g:{ troop:0.8,grain:1.5,gen:"吴玠" }, quote:"仙人关杀金坪，建炎四年吴玠大破兀术处。", tier:"medium", port:false, feature:"关隘" },
+  { n:"剑门关", x:70,  y:540, side:"song", terrain:"关隘", g:{ troop:0.5,grain:1, gen:"" }, quote:"蜀道天险，一夫当关万夫莫开。", tier:"medium", port:false, feature:"关隘" }
+];
+
+// 军队图标：troops 万，size 按人数自动分 large(>=20万)/medium(10-20万)/small(<10万)
+const ARMIES = [
+  { name:"金军·都元帅府",  x:580, y:50,  side:"jin",  troops:22, gen:"粘罕",    loyalty:80 },
+  { name:"兀术·东路军",    x:710, y:295, side:"jin",  troops:12, gen:"兀术",    loyalty:90 },
+  { name:"粘罕·西路军",    x:110, y:335, side:"jin",  troops:6,  gen:"粘罕",    loyalty:75 },
+  { name:"宗泽·东京留守",  x:430, y:195, side:"song", troops:2,  gen:"宗泽",    loyalty:95 },
+  { name:"吴玠·西军",      x:90,  y:470, side:"song", troops:3,  gen:"吴玠",    loyalty:88 },
+  { name:"张俊·御营",      x:470, y:395, side:"song", troops:3,  gen:"张俊",    loyalty:70, isPlayer:true },
+  { name:"韩世忠军",       x:680, y:470, side:"song", troops:1.5,gen:"韩世忠",  loyalty:85 },
+  { name:"岳飞·敢战士",    x:470, y:395, side:"song", troops:0.5,gen:"岳飞",    loyalty:98, offsetY:-14 }
+];
+function armySize(t){ return t>=20 ? "large" : (t>=10 ? "medium" : "small"); }
+// 内部连接线（同色虚线）
+const MAP_LINKS_JIN = [
+  ["燕山府","大名府"],["大名府","河间府"],["河间府","沧州"],["大名府","真定府"],["真定府","太原府"],
+  ["大名府","开德府"],["开德府","东平府"],["东平府","济南府"],["济南府","青州"],
+  ["济南府","徐州"],["徐州","淮阳军"],["开封府","河南府"],["河南府","京兆府"],["京兆府","凤翔府"],
+  ["开封府","颍昌府"],["颍昌府","淮阳军"]
+];
+const MAP_LINKS_SONG = [
+  ["襄阳府","唐州"],["唐州","庐州"],["庐州","扬州"],["扬州","滁州"],["滁州","和州"],
+  ["襄阳府","江陵府"],["江陵府","鄂州"],["鄂州","江州"],["江州","洪州"],["洪州","潭州"],
+  ["鄂州","建康府"],["建康府","平江府"],["平江府","临安"],["临安","绍兴府"],
+  ["兴元府","成都府"],["兴元府","襄阳府"]
+];
+// 淮南交战线（粗灰线，沿淮河）
+const FRONTLINE = ["光州","下蔡","泗州","楚州"];
+
+function nodePos(name){
+  return MAP_NODES.find(n=>n.n===name);
+}
+function sideColor(side){
+  return side==="jin" ? "#d4af37"
+       : side==="song" ? "#e07a5f"
+       : side==="xia" ? "#b07cc6"
+       : side==="dali" ? "#7fb8a5"
+       : side==="jiaozhi" ? "#c69c6d"
+       : "#9a9a9a";
+}
+function sideName(side){
+  return side==="jin" ? "金人占有"
+       : side==="song" ? "大宋所有"
+       : side==="xia" ? "西夏割据"
+       : side==="dali" ? "大理自立"
+       : side==="jiaozhi" ? "交趾化外"
+       : "淮南交战";
+}
+// 战后根据结果调整几座关键城池归属
+function resolveMapByVerdict(verdict){
+  const map = { "下蔡":"contested","宿州":"contested","泗州":"contested","楚州":"contested","光州":"contested","淮阳军":"contested" };
+  if(verdict==="大胜"){ map["下蔡"]="song"; map["宿州"]="song"; map["泗州"]="song"; map["楚州"]="song"; map["淮阳军"]="contested"; }
+  else if(verdict==="小胜"){ map["下蔡"]="song"; map["宿州"]="contested"; map["泗州"]="contested"; }
+  else if(verdict==="小负"){ map["下蔡"]="contested"; map["光州"]="song"; }
+  else { map["下蔡"]="jin"; map["光州"]="contested"; }
+  Object.keys(map).forEach(k=>{
+    const nd = nodePos(k); if(nd) nd.side = map[k];
+  });
+}
+// 季节：建炎元年秋 → 冬（黄河结冰）→ 二年春。金军秋来春去。
+function seasonOf(turn){
+  if(turn <= 2) return { key:"秋", note:"入秋·金军初下", jinBoost:1.0 };
+  if(turn <= 5) return { key:"冬", note:"黄河结冰·金军加压", jinBoost:1.15 };
+  return { key:"春", note:"入春·本应北归，兀术追击不退", jinBoost:1.05 };
+}
+// 兀术东路军随季节南压
+// 城池投降倾向：大城难降，小城易降；有守将降倾向低，粮尽暴涨
+function citySurrenderChance(nd){
+  let base = nd.tier==="large" ? 0.05 : nd.tier==="medium" ? 0.15 : 0.30;
+  if(nd.terrain === "关隘") base -= 0.15;  // 关隘天险，极难投降
+  if(nd.g && nd.g.gen){
+    const army = ARMIES.find(a=>a.gen === nd.g.gen);
+    const lo = army ? army.loyalty : 60;
+    if(lo >= 90) base -= 0.15;
+    else if(lo >= 70) base -= 0.10;
+    else if(lo >= 50) base -= 0.05;
+    else base += 0.10;
+  }
+  if(nd.g && nd.g.grain <= 0) base += 0.50;
+  if(nd.side === "contested") base += 0.10;
+  return Math.max(0, Math.min(0.95, base));
+}
+// 每旬兵粮消耗：所有城池按驻军耗粮
+function consumeCityGrain(){
+  MAP_NODES.forEach(nd=>{
+    if(!nd.g) return;
+    nd.g.grain = Math.max(0, +(nd.g.grain - nd.g.troop*0.1).toFixed(1));
+  });
+}
+// 粮尽易帜：无强将的城池投降
+function resolveStarvation(){
+  const events = [];
+  MAP_NODES.forEach(nd=>{
+    if(nd.side === "contested" && nd.g && nd.g.grain <= 0 && !(nd.g && nd.g.gen)){
+      // 无守将、粮尽、交战区 → 易帜
+      nd.side = "jin";
+      events.push(nd.n);
+    }
+  });
+  return events;
+}
+function wuzhuPos(turn){
+  if(turn <= 2) return { x:710, y:295 };   // 秋：徐州
+  if(turn <= 5) return { x:590, y:355 };   // 冬：宿州
+  return { x:500, y:385 };                  // 春：下蔡城下
+}
+function renderMapSVG(W, H, detailed){
+  const season = seasonOf(G ? G.turn : 0);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;background:linear-gradient(180deg,#1a1f2a 0%,#14181f 100%)">`;
+  // ---- 地形底色 ----
+  // 华北平原（金占腹地）
+  svg += `<rect x="60" y="60" width="760" height="290" fill="#2a2418" opacity="0.35"/>`;
+  // 川陕山地（京兆-凤翔-兴元）
+  svg += `<path d="M 60 200 L 200 200 L 200 480 L 60 480 Z" fill="#2b2018" opacity="0.5"/>`;
+  // 淮南水网
+  svg += `<rect x="300" y="370" width="560" height="110" fill="#1a2830" opacity="0.4"/>`;
+  // 江南水网
+  svg += `<rect x="120" y="490" width="760" height="180" fill="#1a2830" opacity="0.5"/>`;
+  // 地格点阵
+  for(let gx=40; gx<W; gx+=40){
+    for(let gy=40; gy<H; gy+=40){
+      svg += `<circle cx="${gx}" cy="${gy}" r="0.6" fill="#3a4048" opacity="0.5"/>`;
+    }
+  }
+  if(detailed){
+    svg += `<text x="${W/2}" y="22" text-anchor="middle" fill="var(--paper)" font-size="13" letter-spacing="4" font-family="serif">淮 汉 舆 图 · 建 炎 元 年</text>`;
+    svg += `<text x="${W-20}" y="22" text-anchor="end" fill="${season.key==="冬"?"#9ec5e0":season.key==="春"?"#a8d5a2":"#e8c89a"}" font-size="11" font-weight="bold">${season.note}</text>`;
+  }
+  // ---- 河流 ----
+  // 黄河：京兆 → 洛阳 → 开封 → 东平 → 沧州
+  svg += `<polyline points="150,285 280,270 360,260 480,270 610,230 720,95" fill="none" stroke="#3a6a8a" stroke-width="3.5" opacity="0.7"/>`;
+  svg += `<text x="280" y="255" fill="#7ab0d0" font-size="9" opacity="0.8">黄 河</text>`;
+  // 长江：江陵 → 鄂州 → 江州 → 建康 → 平江
+  svg += `<polyline points="150,520 270,540 380,580 560,540 700,560" fill="none" stroke="#3a6a8a" stroke-width="4" opacity="0.8"/>`;
+  svg += `<text x="300" y="575" fill="#7ab0d0" font-size="9" opacity="0.8">长 江</text>`;
+  // ---- 内部连线 ----
+  MAP_LINKS_JIN.forEach(([a,b])=>{
+    const A=nodePos(a), B=nodePos(b); if(!A||!B) return;
+    svg += `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="#d4af37" stroke-width="1" stroke-dasharray="3,4" opacity="0.35"/>`;
+  });
+  MAP_LINKS_SONG.forEach(([a,b])=>{
+    const A=nodePos(a), B=nodePos(b); if(!A||!B) return;
+    svg += `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="#e07a5f" stroke-width="1" stroke-dasharray="3,4" opacity="0.35"/>`;
+  });
+  // ---- 淮南交战线（淮河）----
+  let pts = FRONTLINE.map(n=>{ const p=nodePos(n); return `${p.x},${p.y}`; }).join(" ");
+  svg += `<polyline points="${pts}" fill="none" stroke="#9a9a9a" stroke-width="${detailed?3:2}" stroke-linejoin="round" opacity="0.85"/>`;
+  svg += `<text x="400" y="372" fill="#bbb" font-size="9" opacity="0.7">淮 河</text>`;
+  // ---- 城池节点 ----
+  MAP_NODES.forEach(n=>{
+    const c = sideColor(n.side);
+    if(n.isPlayer && detailed){
+      svg += `<circle cx="${n.x}" cy="${n.y}" r="11" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.7"><animate attributeName="r" values="9;14;9" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.7;0.2;0.7" dur="2.4s" repeatCount="indefinite"/></circle>`;
+      svg += `<circle cx="${n.x}" cy="${n.y}" r="6" fill="#e07a5f" stroke="#fff" stroke-width="1.5" class="city-node" data-city="${n.n}" style="cursor:pointer"/>`;
+      svg += `<text x="${n.x+12}" y="${n.y+4}" fill="#fff" font-size="12" font-weight="bold" class="city-node" data-city="${n.n}" style="cursor:pointer">${n.n} · 行在</text>`;
+    } else {
+      const r = detailed ? 4.5 : 3;
+      svg += `<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${c}" stroke="none" opacity="0.95" class="city-node" data-city="${n.n}" style="cursor:pointer"/>`;
+      if(detailed){
+        const dy = (n.side==="song" ? -8 : (n.side==="jin" ? -8 : 14));
+        svg += `<text x="${n.x}" y="${n.y+dy}" text-anchor="middle" fill="${c}" font-size="11" opacity="0.9" class="city-node" data-city="${n.n}" style="cursor:pointer">${n.n}</text>`;
+        if(n.g && (n.g.troop>0 || n.g.grain>0)){
+          const line = `兵${n.g.troop}万 粮${n.g.grain}万${n.g.gen?(" · "+n.g.gen):""}`;
+          svg += `<text x="${n.x}" y="${n.y+dy+12}" text-anchor="middle" fill="var(--gray)" font-size="9" opacity="0.8">${line}</text>`;
+        }
+      }
+    }
+  });
+  // ---- 军队图标（兀术随季节南压）----
+  if(detailed){
+    ARMIES.forEach(a=>{
+      let ax = a.x, ay = a.y;
+      if(a.gen === "兀术"){ const p = wuzhuPos(G ? G.turn : 0); ax = p.x; ay = p.y; }
+      const size = armySize(a.troops);
+      const r = size==="large" ? 10 : size==="medium" ? 7 : 4.5;
+      const c = a.side==="jin" ? "#d4af37" : "#e07a5f";
+      const y = a.offsetY ? ay + a.offsetY : ay;
+      svg += `<polygon points="${ax},${y-r} ${ax-r},${y+r*0.7} ${ax+r},${y+r*0.7}" fill="${c}" stroke="#14181f" stroke-width="1" opacity="0.95"/>`;
+      svg += `<text x="${ax}" y="${y+r+10}" text-anchor="middle" fill="${c}" font-size="10" font-weight="bold">${a.gen}</text>`;
+      svg += `<text x="${ax}" y="${y+r+20}" text-anchor="middle" fill="var(--gray)" font-size="9">${a.troops}万</text>`;
+    });
+  }
+  svg += `</svg>`;
+  return svg;
+}
+let mapView = { scale:1, tx:0, ty:0 };
+function applyMapTransform(){
+  const inner = document.getElementById("map-inner");
+  if(inner) inner.style.transform = `translate(${mapView.tx}px, ${mapView.ty}px) scale(${mapView.scale})`;
+}
+function openMap(){
+  const body = $("map-body");
+  if(G.ending_verdict) resolveMapByVerdict(G.ending_verdict);
+  const W=900, H=780;
+  const svg = renderMapSVG(W, H, true);
+  const season = seasonOf(G.turn);
+  const jinCount = MAP_NODES.filter(n=>n.side==="jin").length;
+  const songCount = MAP_NODES.filter(n=>n.side==="song").length;
+  const contCount = MAP_NODES.filter(n=>n.side==="contested").length;
+  body.innerHTML = `
+    <div id="map-viewport" style="width:100%;height:600px;overflow:hidden;cursor:grab;position:relative;border:1px solid var(--line);border-radius:6px;background:#14181f;user-select:none">
+      <div id="map-inner" style="transform-origin:0 0;width:${W}px;height:${H}px">${svg}</div>
+      <div id="map-detail" style="position:absolute;right:10px;top:10px;width:260px;background:rgba(20,24,31,0.95);border:1px solid var(--line);border-radius:6px;padding:12px;font-size:12.5px;line-height:1.7;display:none;max-height:560px;overflow:auto"></div>
+      <div style="position:absolute;left:10px;bottom:10px;background:rgba(20,24,31,0.85);border:1px solid var(--line);border-radius:4px;padding:6px 10px;font-size:11px;color:var(--gray)">滚轮缩放 · 拖拽平移 · 双击复位 · 点击城池看详情</div>
+    </div>
+    <div style="margin-top:10px;font-size:12.5px;color:var(--paper-deep);line-height:1.7">
+      当前：<b style="color:${season.key==="冬"?"#9ec5e0":season.key==="春"?"#a8d5a2":"#e8c89a"}">${season.note}</b>。下蔡之战${G.ending_verdict?("：<b>"+G.ending_verdict+"</b>"):"尚在，金军东线正缓缓压上"}。<br>
+      金 ${jinCount} 城 · 宋 ${songCount} 城 · 淮南交战 ${contCount} 城。
+    </div>`;
+  mapView = { scale:1, tx:0, ty:0 };
+  applyMapTransform();
+  // ---- 滚轮缩放（以鼠标为中心）----
+  const vp = document.getElementById("map-viewport");
+  vp.addEventListener("wheel", e=>{
+    e.preventDefault();
+    const rect = vp.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const oldS = mapView.scale;
+    const newS = Math.max(0.6, Math.min(4, oldS * (e.deltaY < 0 ? 1.15 : 0.87)));
+    // 以鼠标为中心：保持鼠标下的点不动
+    mapView.tx = mx - (mx - mapView.tx) * (newS / oldS);
+    mapView.ty = my - (my - mapView.ty) * (newS / oldS);
+    mapView.scale = newS;
+    applyMapTransform();
+  }, { passive:false });
+  // ---- 拖拽平移 ----
+  let dragging = false, sx=0, sy=0, stx=0, sty=0;
+  vp.addEventListener("mousedown", e=>{
+    dragging = true; sx = e.clientX; sy = e.clientY; stx = mapView.tx; sty = mapView.ty;
+    vp.style.cursor = "grabbing";
+  });
+  window.addEventListener("mousemove", e=>{
+    if(!dragging) return;
+    mapView.tx = stx + (e.clientX - sx);
+    mapView.ty = sty + (e.clientY - sy);
+    applyMapTransform();
+  });
+  window.addEventListener("mouseup", ()=>{ dragging=false; vp.style.cursor="grab"; });
+  // ---- 双击复位 ----
+  vp.addEventListener("dblclick", ()=>{
+    mapView = { scale:1, tx:0, ty:0 };
+    applyMapTransform();
+  });
+  // ---- 城池点击详情 ----
+  vp.querySelectorAll(".city-node").forEach(el=>{
+    el.addEventListener("click", e=>{
+      e.stopPropagation();
+      const name = el.dataset.city;
+      const nd = nodePos(name);
+      if(!nd) return;
+      const sideLabel = `<b style="color:${sideColor(nd.side)}">${sideName(nd.side)}</b>`;
+      const tierLabel = nd.tier==="large" ? "大城（四京/都会）" : nd.tier==="medium" ? "中城（府州军）" : "小城";
+      const portLabel = nd.port ? "是（有内渡，可漕运转运）" : "否";
+      const sc = citySurrenderChance(nd);
+      const scLabel = sc<0.1 ? '<span style="color:#7fb88a">低（难降）</span>'
+                    : sc<0.25 ? '<span style="color:#e8c89a">中</span>'
+                    : '<span style="color:#e07a5f">高（易降）</span>';
+      const g = nd.g || {};
+      document.getElementById("map-detail").innerHTML = `
+        <div style="font-size:14px;font-weight:bold;margin-bottom:6px">${nd.n} ${nd.isPlayer?'· 行在':''}</div>
+        <div style="margin-bottom:4px">归属：${sideLabel}</div>
+        <div style="margin-bottom:4px">规模：${tierLabel}${nd.port?' · 港口':''}</div>
+        <div style="margin-bottom:4px">地形：${nd.terrain||"—"}${nd.terrain==="关隘"?' <span style="color:#e07a5f">（天险 · 守军战力 ×1.6）</span>':""}</div>
+        <div style="margin-bottom:4px">港口内渡：${portLabel}</div>
+        <div style="margin-bottom:4px">守军：兵 ${g.troop||0} 万 · 粮 ${g.grain||0} 万石${g.gen?(" · 主将 "+g.gen):" · 无主将"}</div>
+        ${g.gen?`<div style="margin-bottom:4px">守将忠诚：<span style="color:${(ARMIES.find(a=>a.gen===g.gen)?.loyalty||80)>=80?"#7fb88a":(ARMIES.find(a=>a.gen===g.gen)?.loyalty||80)>=60?"#e8c89a":"#e07a5f"}">${ARMIES.find(a=>a.gen===g.gen)?.loyalty||80}</span> / 100</div>`:""}
+        <div style="margin-bottom:4px">投降倾向：${(sc*100).toFixed(0)}% ${scLabel}</div>
+        <div style="color:var(--gray);border-top:1px dashed var(--line);padding-top:6px;margin-top:6px">${nd.quote||""}</div>`;
+      document.getElementById("map-detail").style.display = "block";
+    });
+  });
+  $("mask-map").classList.add("open");
+}
+function renderMiniMap(){
+  const box = $("mini-map");
+  if(!box) return;
+  if(G.ending_verdict) resolveMapByVerdict(G.ending_verdict);
+  box.innerHTML = renderMapSVG(900, 780, false);
+  box.onclick = ()=>openMap();
+}
+$("btn-map-close").addEventListener("click", ()=>closeMask("mask-map"));
+const FORMATIONS = [
+  { id:"zhen",  name:"方阵",   desc:"步兵厚阵，克骑兵。敌骑兵伤害 -30%。", counter:"cav" },
+  { id:"yan",   name:"雁行阵", desc:"弓兵展开，克步兵。敌步兵伤害 -30%。", counter:"inf" },
+  { id:"chang", name:"长蛇阵", desc:"轻骑机动，克弓兵。敌弓兵伤害 -30%。", counter:"archer" },
+  { id:"gou",   name:"钩镰阵", desc:"重斧钩马，专破骑步。敌骑步各 -15%。", counter:"both" }
+];
+function openRaid(){
+  const body = $("raid-body");
+  const targets = MAP_NODES.filter(n =>
+    (n.side === "jin" || n.side === "contested") &&
+    ["宿州","泗州","光州","淮阳军","徐州","颍昌府"].includes(n.n)
+  );
+  const renderTargets = ()=>{
+    body.innerHTML = `
+      <div class="topic-head">北伐 · 选目标</div>
+      <div class="choice-list">
+        ${targets.map((t,i)=>{
+          const g = t.g || {};
+          return `<button class="choice-item" data-r="${i}">
+            <span class="cn">${t.n} <span class="qtag">${t.terrain}</span></span>
+            <span class="cd">守军 ${g.troop||0} 万 · 粮 ${g.grain||0} 万${g.gen?(" · "+g.gen):""}</span>
+          </button>`;
+        }).join("")}
+      </div>`;
+    body.querySelectorAll(".choice-item").forEach(btn=>{
+      btn.onclick = ()=>renderFormation(targets[+btn.dataset.r]);
+    });
+  };
+  const renderFormation = (t)=>{
+    body.innerHTML = `
+      <div class="topic-head">野战对阵 · ${t.n}</div>
+      <p style="font-size:12px;color:var(--gray);margin-bottom:8px">我军：步兵 ${(G.troops-G.cav-G.archer)/10000}.1 万 · 骑兵 ${(G.cav/10000).toFixed(1)} 万 · 弓兵 ${(G.archer/10000).toFixed(1)} 万。<br>金军多骑兵，请选阵型以克之。</p>
+      <div class="choice-list">
+        ${FORMATIONS.map(f=>`<button class="choice-item" data-f="${f.id}">
+          <span class="cn">${f.name}</span>
+          <span class="cd">${f.desc}</span>
+        </button>`).join("")}
+      </div>
+      <div class="row"><button class="btn" data-back>← 换目标</button></div>`;
+    body.querySelector("[data-back]").onclick = renderTargets;
+    body.querySelectorAll('[data-f]').forEach(btn=>{
+      btn.onclick = ()=>resolveRaid(t, btn.dataset.f);
+    });
+  };
+  const resolveRaid = (t, fid)=>{
+    const f = FORMATIONS.find(x=>x.id===fid);
+    G.troops -= 10000;
+    G.used_this_turn.push("raid");
+    // 基础战力
+    let myPower = songPowerNow();
+    let enemyPower = (t.g?.troop||1) * 10000 * (t.terrain==="山地"?0.8:1.0) * (t.g?.gen?1.1:1.0);
+    if(t.terrain === "关隘") enemyPower *= 1.6;  // 关隘天险，守军战力 ×1.6
+    // 金军默认骑兵为主（70%骑兵）
+    const enemyCavRatio = 0.7;
+    // 阵型克制
+    let formMod = 1.0;
+    if(f.counter==="cav") formMod = 1 - enemyCavRatio*0.30;
+    else if(f.counter==="both") formMod = 1 - enemyCavRatio*0.15 - 0.15*(1-enemyCavRatio);
+    myPower *= formMod;
+    // 我军骑兵比例加成
+    myPower *= (1 + (G.cav/G.troops)*0.3);
+    const ratio = myPower / enemyPower;
+    let result;
+    if(ratio > 1.3){
+      t.side = "song";
+      G.treasury += 20000;
+      G.spirit = clamp(G.spirit+5,0,100);
+      logTurn(`北伐克复${t.n}！${f.name}破敌，缴获 +2万贯`, "good");
+      result = `克复${t.n}！${f.name}列阵而进，金军骑兵冲不动方阵，反被弓兵射落马下。城中父老夹道相迎。国库缴获 +2万贯。`;
+    } else if(ratio > 1.0){
+      t.side = "contested";
+      G.treasury += 8000;
+      logTurn(`北伐小胜${t.n}，${f.name}相持，缴获有限`, "good");
+      result = `攻至${t.n}城下，${f.name}与金军相持半日，金军稍却，然城池未下。缴获 +8000 贯。`;
+    } else {
+      G.troops = Math.max(5000, G.troops - 5000);
+      G.spirit = clamp(G.spirit-5,0,100);
+      logTurn(`北伐${t.n}失利，${f.name}被金军骑冲，折兵五千`, "bad");
+      result = `${t.n}城下，${f.name}被金军铁骑冲透，折兵五千而还。回下蔡再作计较。`;
+    }
+    renderHeader(); renderSidebar(); renderActions(); renderLog();
+    body.innerHTML = `
+      <div class="dialogue">
+        <span class="who">野战 · ${t.n} · ${f.name}</span>
+        <p>${result}</p>
+      </div>
+      <div class="row"><button class="btn" onclick="closeMask('mask-raid')">还下蔡</button></div>`;
+  };
+  renderTargets();
+  $("mask-raid").classList.add("open");
+}
+$("btn-raid-close").addEventListener("click", ()=>closeMask("mask-raid"));
+
+["mask-map"].forEach(id=>{
+  const m = $(id);
+  m.addEventListener("click", e=>{ if(e.target===m) closeMask(id); });
+});
+
+/* ---- 后宫问安 ---- */
+function openHarem(){
+  const body = $("harem-body");
+  const poolPleasure = PLEASURES;
+  const renderMain = ()=>{
+    body.innerHTML = `
+      <div class="topic-head">宫闱起居 · 问安</div>
+      <div class="choice-list" style="margin-bottom:10px">
+        ${HAREM.map((h,i)=>`<button class="choice-item" data-p="${i}" data-kind="person">
+          <span class="cn">${h.name}</span>
+          <span class="cd">${h.title} · ${h.topics.length} 个话题</span>
+        </button>`).join("")}
+      </div>
+      <div class="topic-head" style="color:var(--jade-light)">后宫享乐 · 各牵君德</div>
+      <p style="font-size:12px;color:var(--gray);margin-bottom:8px">选妃、浣衣、翻牌、饮宴，皆系礼制与私德。享乐一时，君德日削。</p>
+      <div class="choice-list">
+        ${poolPleasure.map((h,i)=>`<button class="choice-item" data-p="${i}" data-kind="pleasure">
+          <span class="cn">${h.name} <span class="qtag">${h.kind}${h.cost?` · ${fmt(h.cost)}贯`:""}</span></span>
+          <span class="cd">${h.title} · ${h.effect_label}</span>
+        </button>`).join("")}
+      </div>`;
+    bindMain(body);
+  };
+  const renderTopics = (person)=>{
+    body.innerHTML = `
+      <div class="topic-head">${person.name} · ${person.title}</div>
+      <div class="choice-list">
+        ${person.topics.map((t,i)=>`<button class="choice-item" data-t="${i}" data-kind="topic">
+          <span class="cn">${t.title}</span>
+          <span class="cd">叙话 · 解乏</span>
+        </button>`).join("")}
+      </div>
+      <div class="row"><button class="btn" data-back>← 退回后宫</button></div>`;
+    body.querySelectorAll("[data-back]").forEach(b=>b.onclick=renderMain);
+    body.querySelectorAll('[data-kind="topic"]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const t = person.topics[+btn.dataset.t];
+        t.effect();
+        renderHeader(); renderSidebar(); renderQuick(); renderLog();
+        const canSleep = person.id !== "lianghongyu";
+        const sleepBtn = canSleep
+          ? `<button class="btn" data-sleep>今夜留宿</button>`
+          : `<button class="btn danger" data-force>强占梁氏（君臣失伦 · 韩世忠必反）</button>`;
+        body.innerHTML = `
+          <div class="dialogue" style="display:flex;gap:14px;align-items:flex-start">
+            <div style="flex-shrink:0;border-right:1px solid var(--line);padding-right:12px">${PORTRAITS[person.id]||""}</div>
+            <div style="flex:1">
+            <span class="who">${person.name} · ${t.title}</span>
+            ${t.lines.map(l=>`<p style="margin-bottom:8px">${l}</p>`).join("")}
+            </div>
+          </div>
+          <div class="intel-box"><span class="it">【宫闱之内】</span>${t.result}</div>
+          ${person.id==="lianghongyu" ? `<div class="intel-box" style="border-color:#e07a5f;margin-top:8px"><span class="it" style="color:#e07a5f">【非常之举】</span>梁红玉乃韩世忠之妻，君臣有别、夫妇有伦。若行强占之事，韩世忠必反，天下武人寒心。</div>` : ""}
+          <div class="row">
+            ${sleepBtn}
+            <button class="btn" data-continue>继续叙话</button>
+            <button class="btn" onclick="closeMask('mask-harem')">出宫</button>
+          </div>`;
+        body.querySelector("[data-continue]").onclick = ()=>renderTopics(person);
+        const sleepBtnEl = body.querySelector("[data-sleep]");
+        if(sleepBtnEl){
+          sleepBtnEl.onclick = ()=>{
+            let sleepText = "", sleepLog = "";
+            if(person.id === "wufuren"){
+              G.popular = clamp(G.popular+1,0,100); G.spirit = clamp(G.spirit+1,0,100);
+              G.virtue = clamp(G.virtue+1,0,100);
+              sleepText = "夜宿吴夫人帐中。她替你卸下甲胄，灯下又温了一盏酒。";
+              sleepLog = "夜宿吴夫人，民心 +1，士气 +1，君德 +1";
+            } else if(person.id === "panxianfei"){
+              G.authority = clamp(G.authority+1,0,100); G.popular = clamp(G.popular+1,0,100);
+              sleepText = "潘贤妃为你掖好被角，低声道：“陛下安歇罢，明日还有朝事。”皇嗣在旁睡得安稳。";
+              sleepLog = "夜宿潘贤妃，皇权威势 +1，民心 +1";
+            }
+            logTurn(sleepLog, "good");
+            renderHeader(); renderSidebar(); renderQuick(); renderLog();
+            const sleepAtmos = person.id==="wufuren"
+              ? "烛影摇红，帐中暖香微动。她替你卸下外氅，灯下眉眼低垂。"
+              : person.id==="panxianfei"
+              ? "帐帷轻垂，只留一盏银灯。她替你宽了朝冠，指尖微颤。"
+              : "";
+            body.innerHTML = `
+              <div class="dialogue" style="display:flex;gap:14px;align-items:flex-start">
+                <div style="flex-shrink:0;border-right:1px solid var(--line);padding-right:12px">${PORTRAITS[person.id]||""}</div>
+                <div style="flex:1">
+                <span class="who">夜 · ${person.name}</span>
+                <p>${sleepText}</p>
+                <p style="color:var(--gray);font-size:12.5px;margin-top:6px">${sleepAtmos}</p>
+                </div>
+              </div>
+              <div class="intel-box"><span class="it">【宫闱之内】</span>${sleepLog}</div>
+              <div class="row"><button class="btn" onclick="closeMask('mask-harem')">回宫安歇</button></div>`;
+          };
+        }
+        const forceBtnEl = body.querySelector("[data-force]");
+        if(forceBtnEl){
+          forceBtnEl.onclick = ()=>{
+            G.virtue = clamp(G.virtue - 15, 0, 100);
+            G.popular = clamp(G.popular - 10, 0, 100);
+            addFaction("war", -20);
+            addFaction("mid", -10);
+            const han = ARMIES.find(a=>a.gen==="韩世忠");
+            if(han){ han.loyalty = 0; han.troops = 0.5; }
+            logTurn(`强占梁氏，韩世忠悲愤交加，所部哗散，主战派 -20，中间派 -10，君德 -15`, "bad");
+            renderHeader(); renderSidebar(); renderQuick(); renderLog();
+            body.innerHTML = `
+              <div class="dialogue peace">
+                <span class="who">非常之举 · 强占</span>
+                <p>当夜，韩世忠在帐外按刀而立，一语不发。次日，其所部三千人溃散过半。</p>
+                <p>消息传出，宗泽在东京呕血，岳飞在军中闭门三日不出。朝野哗然——你这一步，把中兴的根基踩塌了一半。</p>
+                <p style="color:#e07a5f"><b>君德 -15 · 民心 -10 · 主战派 -20 · 中间派 -10 · 韩世忠忠诚 0 · 所部哗散</b></p>
+              </div>
+              <div class="row"><button class="btn" onclick="closeMask('mask-harem')">回宫</button></div>`;
+          };
+        }
+      };
+    });
+  };
+  const bindMain = (bodyEl)=>{
+    bodyEl.querySelectorAll('[data-kind="person"]').forEach(btn=>{
+      btn.onclick = ()=>renderTopics(HAREM[+btn.dataset.p]);
+    });
+    bodyEl.querySelectorAll('[data-kind="pleasure"]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const h = poolPleasure[+btn.dataset.p];
+        if(h.cost > G.treasury){ toast("国库不足"); return; }
+        G.harem_seen.push(h.id);
+        if(h.cost) G.treasury -= h.cost;
+        if(h.effects){
+          Object.keys(h.effects).forEach(k=>{
+            const d = h.effects[k];
+            if(k==="virtue") G.virtue = clamp(G.virtue + d, 0, 100);
+            else if(k==="popular") G.popular = clamp(G.popular + d, 0, 100);
+            else if(k==="authority") G.authority = clamp(G.authority + d, 0, 100);
+            else if(k==="spirit") G.spirit = clamp(G.spirit + d, 0, 100);
+            else if(k==="war"||k==="peace"||k==="mid") addFaction(k, d);
+          });
+          logTurn(`后宫享乐 · ${h.name}：${h.effect_label}`, h.effects.virtue < 0 ? "bad" : "good");
+        }
+        if(h.run) h.run();
+        renderHeader(); renderSidebar(); renderQuick(); renderLog();
+        bodyEl.innerHTML = `
+          <div class="dialogue peace">
+            <span class="who">${h.name} · ${h.title}</span>
+            ${h.lines.map(l=>`<p style="margin-bottom:8px">${l}</p>`).join("")}
+          </div>
+          <div class="intel-box"><span class="it">【宫闱之内】</span>${h.result}<br><span class="il">→ ${h.effect_label}</span></div>
+          <div class="row"><button class="btn" onclick="closeMask('mask-harem')">出宫</button></div>`;
+      };
+    });
+  };
+  renderMain();
+  $("mask-harem").classList.add("open");
+}
+
+function closeMask(id){ $(id).classList.remove("open"); }
+
+$("btn-end-turn").addEventListener("click", ()=>{
+  if(G.phase !== "play") return;
+  G.used_this_turn = [];
+  G.quick_used = [];
+  nextTurn();
+});
+
+$("btn-intel-close").addEventListener("click", ()=>closeMask("mask-intel"));
+$("btn-court-close").addEventListener("click", ()=>closeMask("mask-court"));
+$("btn-audience-close").addEventListener("click", ()=>closeMask("mask-audience"));
+$("btn-harem-close").addEventListener("click", ()=>closeMask("mask-harem"));
+["mask-intel","mask-court","mask-audience","mask-harem"].forEach(id=>{
+  $(id).addEventListener("click", e=>{ if(e.target.id === id) $(id).classList.remove("open"); });
+});
+
+/* ================================================================
+   战役结算
+   ================================================================ */
+function triggerBattle(){
+  G.phase = "battle";
+  const sp = songPowerNow();
+  const jp = jinPowerNow();
+  const ratio = sp / jp;
+  G.jin_power = jp;
+  let verdict, cls, txt;
+  if(ratio >= CONFIG.win_high){
+    verdict = "大胜"; cls = "win";
+    txt = "金军东线就此崩溃！兀术率残部北遁，淮上自此安定。你望向北方——直捣黄龙的窗口，第一次打开了。";
+  } else if(ratio >= CONFIG.win_low){
+    verdict = "小胜"; cls = "win";
+    txt = "金军受挫退却，但并未伤筋动骨。淮上暂时安定，可金人必会卷土重来。";
+  } else if(ratio >= CONFIG.loss_low){
+    verdict = "小负"; cls = "lose";
+    txt = "下蔡守军苦战退敌，但损失惨重，金军残部仍盘踞淮北。你不得不考虑后撤整补。";
+  } else {
+    verdict = "大败"; cls = "lose";
+    txt = "下蔡城破！张俊护着你在乱军中突围。行在被迫南迁——历史，似乎又要滑向它原本的轨道。";
+  }
+  G.battle_done = true;
+  const stage = $("stage");
+  stage.innerHTML = `
+    <div class="turn-head"><div class="tt">下蔡守卫战</div><div class="td">建炎${G.year}年 · 第 ${G.turn} 旬</div></div>
+    <div class="battle-box">
+      <h3>淮上决战 · 战报</h3>
+      <div class="vs">
+        <div class="side song">
+          <div class="sn">大宋 · 下蔡守军（${GENERALS[G.general].name}）</div>
+          <div class="sp">${fmt(Math.round(sp))}</div>
+          <div style="font-size:11px;color:var(--gray)">兵力 ${fmt(G.troops)} · 训练 ${G.train} · 士气 ${G.spirit} · 装备 ${G.equip} · 统御 ${GENERALS[G.general].cmd} · 地形 ${G.defend.toFixed(2)}</div>
+        </div>
+        <div class="mid">VS</div>
+        <div class="side jin">
+          <div class="sn">金国 · 东路军（兀术）</div>
+          <div class="sp">${fmt(Math.round(jp))}</div>
+          <div style="font-size:11px;color:var(--gray)">兵力 ${fmt(CONFIG.jin_troops)} · 训练 ${CONFIG.jin_train} · 士气 ${CONFIG.jin_spirit} · 装备 ${CONFIG.jin_equip} · 统御 ${CONFIG.jin_cmd} · 攻城 0.80</div>
+        </div>
+      </div>
+      <div class="verdict ${cls}">战力比 ${ratio.toFixed(2)} → ${verdict}</div>
+    </div>
+    <div class="prologue"><p>${txt}</p></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+      <button class="btn primary" onclick="resolveBattle('${verdict}')">继续 · 看结局</button>
+    </div>`;
+  renderHeader(); renderSidebar();
+}
+
+function resolveBattle(verdict){
+  G.phase = "ending";
+  G.ending_verdict = verdict;
+  // 战后军队增减：地图 ARMIES 随战斗损失
+  const losses = {
+    "大胜": { song:0.7, jin:0.55 },
+    "小胜": { song:0.8, jin:0.75 },
+    "小负": { song:0.65, jin:0.85 },
+    "大败": { song:0.3, jin:0.9 }
+  }[verdict] || { song:0.7, jin:0.8 };
+  ARMIES.forEach(a=>{
+    if(a.gen === "张俊") a.troops = +(a.troops * losses.song).toFixed(1);
+    if(a.gen === "兀术")  a.troops = +(a.troops  * losses.jin).toFixed(1);
+  });
+  let ending, sub, body;
+  if(verdict === "大胜"){
+    ending = "中兴之始 · 直捣黄龙";
+    sub = "历史，已被你改写";
+    body = "下蔡大捷，淮上安定。金军东线溃退的消息传遍天下，河北义军纷纷响应。你站在下蔡城头，望着北方的烟尘散去——那里是汴京，是河北，是燕云，是黄龙府。宗泽老泪纵横，上表请还都东京；岳飞请率前军渡河北上；李纲在朝堂上掷地有声：'陛下中兴，正在今日！'。你知道，这只是一个开始。但你已经走出了与另一个时空的赵构完全不同的一步——你站在了前线，而不是逃向海上。";
+  } else if(verdict === "小胜"){
+    ending = "淮上对峙";
+    sub = "守住了一条河，但路还很长";
+    body = "金军退去，淮上暂安。但所有人都清楚，兀术还会再来。你下令整编御营、推行国债、修缮城防，行在渐渐有了中兴的气象。可朝中主和的声音依然顽固——秦桧还在金国，刘豫的伪齐政权还在济南。你望着地图上的淮河，知道这条路才刚刚开始。";
+  } else if(verdict === "小负"){
+    ending = "退守襄阳";
+    sub = "下蔡失守，行在不得不南迁";
+    body = "金军虽然退去，但下蔡已残破不堪。你率行在退往襄阳，依托山河重整旗鼓。襄阳城中，你对着地图彻夜未眠——关中的西军还在，荆湖的钱粮还在，只要人不散，就还有翻盘的机会。但朝中主和一党已开始蠢蠢欲动，鼓吹'与金划江而治'。你看着他们，没有说话。";
+  } else {
+    ending = "北狩之祸";
+    sub = "历史滑向了它原本的轨道";
+    body = "下蔡城破，行在溃散。你在杨沂中的护卫下仓皇南逃，一路退过淮河、退过长江。身后是金军的铁骑，身前是无尽的江南烟雨。你想起明道宫的那口井，想起自己醒来时那句'朕不去扬州'——如今，你终究还是到了扬州，甚至更远。朝中主和一党彻底抬头，议和的声浪铺天盖地。你闭上了眼睛。";
+  }
+  G.ending = ending;
+  // 君德评价（昏庸↔贤能）
+  const v = G.virtue;
+  let virtueWord, virtueLine;
+  if(v >= 80){ virtueWord = "圣明之君"; virtueLine = "起居有节，亲民纳谏，德望如日中天——天下以中兴有望。"; }
+  else if(v >= 60){ virtueWord = "贤能之主"; virtueLine = "大体勤勉，偶有失度，然不失为乱世明主。"; }
+  else if(v >= 40){ virtueWord = "得失参半"; virtueLine = "君德时有亏损，朝堂暗生议论，人心渐有离意。"; }
+  else if(v >= 20){ virtueWord = "昏德渐显"; virtueLine = "享乐日盛，政事日荒，台谏弹章渐多——史笔或书'失德'二字。"; }
+  else { virtueWord = "昏聩之主"; virtueLine = "酒池肉林，政令不行，民心尽失。纵有胜局，亦难掩君德之亏。"; }
+  G.virtue_word = virtueWord;
+  // 结局结算朝堂
+  const stage = $("stage");
+  stage.innerHTML = `
+    <div class="ending">
+      <h2>${ending}</h2>
+      <div class="sub">${sub}</div>
+      <p>${body}</p>
+      <div class="stat" style="max-width:420px;margin:0 auto 6px"><span class="k">最终国库</span><span class="v">${fmt(G.treasury)} 贯</span></div>
+      <div class="stat" style="max-width:420px;margin:0 auto 6px"><span class="k">皇权威势</span><span class="v">${G.authority}</span></div>
+      <div class="stat" style="max-width:420px;margin:0 auto 6px"><span class="k">君德（昏庸↔贤能）</span><span class="v" style="color:${v>=60?"var(--jade-light)":v>=40?"var(--gold)":"#e07a5f"}">${G.virtue} · ${virtueWord}</span></div>
+      <div class="stat" style="max-width:420px;margin:0 auto 6px"><span class="k">主战派 / 主和派 / 中间派</span><span class="v">${G.factions.war} / ${G.factions.peace} / ${G.factions.mid}</span></div>
+      <p style="font-size:13px;color:var(--paper-deep);border-top:1px dashed var(--line);padding-top:10px">${virtueLine}</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+        <button class="btn primary" onclick="restart()">再战一局</button>
+        <button class="btn" onclick="saveGame();toast('已存档，可随时读档')">保存结局</button>
+      </div>
+    </div>`;
+  renderHeader(); renderSidebar();
+}
+
+/* ================================================================
+   存档 / 读档 / 重开 / 帮助
+   ================================================================ */
+function saveGame(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+    toast("已存档");
+  }catch(e){ toast("存档失败：" + e.message); }
+}
+function loadGame(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw){ toast("没有存档"); return; }
+    G = JSON.parse(raw);
+    renderHeader(); renderSidebar();
+    if(G.phase === "prologue") startPrologue();
+    else if(G.phase === "ending") resolveBattleFromSave();
+    else renderTurn();
+    toast("已读档");
+  }catch(e){ toast("读档失败：" + e.message); }
+}
+function resolveBattleFromSave(){
+  const sp = songPowerNow();
+  const jp = G.jin_power || jinPowerNow();
+  const ratio = sp / jp;
+  let verdict;
+  if(ratio >= CONFIG.win_high) verdict = "大胜";
+  else if(ratio >= CONFIG.win_low) verdict = "小胜";
+  else if(ratio >= CONFIG.loss_low) verdict = "小负";
+  else verdict = "大败";
+  G.phase = "battle";
+  triggerBattle();
+}
+function restart(){
+  G = newGame();
+  saveGame();
+  startPrologue();
+  renderHeader(); renderSidebar(); renderLog();
+}
+function toast(msg){
+  const old = document.getElementById("toast");
+  if(old) old.remove();
+  const t = document.createElement("div");
+  t.id = "toast";
+  t.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);border:1px solid var(--gold);color:var(--paper);padding:8px 18px;border-radius:8px;font-size:13px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.4)";
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2000);
+}
+
+$("btn-save").addEventListener("click", saveGame);
+$("btn-load").addEventListener("click", loadGame);
+$("btn-restart").addEventListener("click", ()=>{
+  if(confirm("确定重新开始？当前进度将丢失（可先存档）。")) restart();
+});
+$("btn-help").addEventListener("click", ()=>$("mask-help").classList.add("open"));
+$("btn-help-close").addEventListener("click", ()=>$("mask-help").classList.remove("open"));
+$("mask-help").addEventListener("click", e=>{ if(e.target.id === "mask-help") $("mask-help").classList.remove("open"); });
+
+/* ================================================================
+   启动
+   ================================================================ */
+function init(){
+  G = newGame();
+  startPrologue();
+  renderHeader(); renderSidebar();
+}
+init();
+</script>
+</body>
+</html>
