@@ -1741,6 +1741,76 @@ const MAP_NODES = [
 
   // ===== 交趾（最南）=====
   { n:"交州",   x:300, y:740, side:"jiaozhi", terrain:"水网", g:{ troop:1.5,grain:2, gen:"李乾德" }, quote:"交趾州，南疆极边，宋人视为化外。", tier:"medium", port:true, feature:"" },
+  // ===== 京西/京畿补全 =====
+  { n:"郑州",   x:430, y:235, side:"jin", terrain:"平原", g:{ troop:0.5,grain:1, gen:"" }, quote:"郑县故地，京畿西南。", tier:"medium" },
+  { n:"滑州",   x:500, y:225, side:"jin", terrain:"平原", g:{ troop:0.3,grain:0.5,gen:"" }, quote:"白马津，黄河南渡要地。", tier:"medium" },
+  { n:"孟州",   x:330, y:235, side:"jin", terrain:"渡口", g:{ troop:0.5,grain:1, gen:"" }, quote:"河阳三城，北渡黄河要津。", tier:"medium", port:true },
+  { n:"陕州",   x:250, y:250, side:"jin", terrain:"关隘", g:{ troop:0.8,grain:1.5,gen:"" }, quote:"陕州故城，崤函道东端。", tier:"medium", feature:"关隘" },
+  { n:"汝州",   x:370, y:290, side:"jin", terrain:"丘陵", g:{ troop:0.3,grain:0.8,gen:"" }, quote:"汝州梁县，产瓷名郡。", tier:"medium" },
+  { n:"蔡州",   x:380, y:340, side:"jin", terrain:"平原", g:{ troop:0.8,grain:2, gen:"" }, quote:"蔡州汝阳，淮西北门。", tier:"large" },
+  { n:"顺昌府", x:440, y:360, side:"contested", terrain:"平原", g:{ troop:0.5,grain:1, gen:"" }, quote:"顺昌府，刘锜曾大破兀术于此。", tier:"medium" },
+  { n:"邓州",   x:200, y:380, side:"song", terrain:"丘陵", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"邓州南阳，古宛城。", tier:"medium" },
+  { n:"德安府", x:320, y:490, side:"song", terrain:"丘陵", g:{ troop:0.3,grain:1, gen:"" }, quote:"德安府安陆，淮西屏蔽。", tier:"medium" },
+  { n:"岳州",   x:200, y:580, side:"song", terrain:"水网", g:{ troop:0.3,grain:1.5,gen:"" }, quote:"岳州巴陵，洞庭湖畔。", tier:"medium", port:true },
+  // ===== 京东补全 =====
+  { n:"兖州",   x:620, y:250, side:"jin", terrain:"平原", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"兖州瑕丘，齐鲁要冲。", tier:"medium" },
+  { n:"济州",   x:650, y:260, side:"jin", terrain:"平原", g:{ troop:0.3,grain:1, gen:"" }, quote:"济州巨野，梁山泊所在。", tier:"medium" },
+  { n:"密州",   x:850, y:240, side:"jin", terrain:"丘陵", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"密州诸城，滨海名郡。", tier:"medium", port:true },
+  { n:"登州",   x:880, y:200, side:"jin", terrain:"水网", g:{ troop:0.3,grain:0.8,gen:"" }, quote:"登州蓬莱，北渡辽东渡口。", tier:"medium", port:true },
+  { n:"莱州",   x:870, y:260, side:"jin", terrain:"丘陵", g:{ troop:0.3,grain:0.8,gen:"" }, quote:"莱州掖县，滨海盐利。", tier:"medium", port:true },
+  { n:"沂州",   x:800, y:280, side:"jin", terrain:"丘陵", g:{ troop:0.5,grain:1, gen:"" }, quote:"沂州临沂，沂蒙山道。", tier:"medium" },
+  { n:"涟水军", x:820, y:360, side:"contested", terrain:"水网", g:{ troop:0.3,grain:0.5,gen:"" }, quote:"涟水军，淮北水寨。", tier:"medium", port:true },
+  // ===== 河北补全 =====
+  { n:"冀州",   x:580, y:100, side:"jin", terrain:"平原", g:{ troop:0.8,grain:2, gen:"" }, quote:"冀州信都，河北腹心。", tier:"medium" },
+  { n:"相州",   x:430, y:150, side:"jin", terrain:"平原", g:{ troop:0.8,grain:2, gen:"" }, quote:"相州安阳，岳飞故里。", tier:"medium" },
+  { n:"怀州",   x:350, y:190, side:"jin", terrain:"平原", g:{ troop:0.5,grain:1, gen:"" }, quote:"怀州河内，黄河北岸。", tier:"medium" },
+  { n:"卫州",   x:400, y:180, side:"jin", terrain:"平原", g:{ troop:0.5,grain:1, gen:"" }, quote:"卫州汲县，河北南大门。", tier:"medium" },
+  // ===== 河东补全 =====
+  { n:"隆德府", x:220, y:130, side:"jin", terrain:"山地", g:{ troop:0.8,grain:1.5,gen:"" }, quote:"隆德府上党，河东要镇。", tier:"medium" },
+  { n:"泽州",   x:250, y:160, side:"jin", terrain:"山地", g:{ troop:0.5,grain:1, gen:"" }, quote:"泽州晋城，太行道上。", tier:"medium" },
+  { n:"汾州",   x:160, y:140, side:"jin", terrain:"盆地", g:{ troop:0.5,grain:1, gen:"" }, quote:"汾州西河，汾河谷地。", tier:"medium" },
+  { n:"代州",   x:180, y:50,  side:"jin", terrain:"关隘", g:{ troop:0.8,grain:1, gen:"" }, quote:"代州雁门，北控云朔。", tier:"medium", feature:"关隘" },
+  // ===== 永兴军/秦凤补全 =====
+  { n:"延安府", x:120, y:220, side:"jin", terrain:"丘陵", g:{ troop:1.5,grain:2, gen:"" }, quote:"延安府肤施，鄜延路首府。", tier:"large" },
+  { n:"庆州",   x:80,  y:280, side:"jin", terrain:"丘陵", g:{ troop:0.8,grain:1, gen:"" }, quote:"庆州安化，环庆路首府。", tier:"medium" },
+  { n:"同州",   x:200, y:300, side:"jin", terrain:"平原", g:{ troop:0.5,grain:1, gen:"" }, quote:"同州冯翊，黄河西渡。", tier:"medium" },
+  { n:"华州",   x:230, y:310, side:"jin", terrain:"丘陵", g:{ troop:0.5,grain:1, gen:"" }, quote:"华州郑县，华山脚下。", tier:"medium" },
+  { n:"秦州",   x:50,  y:380, side:"song", terrain:"山地", g:{ troop:1, grain:2, gen:"" }, quote:"秦州成纪，秦凤路首府。", tier:"large" },
+  { n:"兰州",   x:10,  y:350, side:"song", terrain:"草场", g:{ troop:0.5,grain:0.5,gen:"" }, quote:"兰州兰泉，黄河要津。", tier:"medium", feature:"草场" },
+  // ===== 四川补全 =====
+  { n:"嘉定府", x:80,  y:650, side:"song", terrain:"山地", g:{ troop:0.3,grain:1.5,gen:"" }, quote:"嘉定府龙游，峨眉山下。", tier:"medium" },
+  { n:"潼川府", x:150, y:620, side:"song", terrain:"丘陵", g:{ troop:0.5,grain:2, gen:"" }, quote:"潼川府郪县，梓州路首府。", tier:"large" },
+  { n:"利州",   x:130, y:520, side:"song", terrain:"山地", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"利州绵谷，蜀道北大门。", tier:"medium" },
+  { n:"重庆府", x:220, y:660, side:"song", terrain:"水网", g:{ troop:0.5,grain:2, gen:"" }, quote:"重庆府巴县，嘉陵江口。", tier:"medium", port:true },
+  { n:"夔州",   x:280, y:680, side:"song", terrain:"山地", g:{ troop:0.3,grain:1, gen:"" }, quote:"夔州奉节，三峡西口。", tier:"medium" },
+  // ===== 荆湖补全 =====
+  { n:"衡州",   x:280, y:660, side:"song", terrain:"丘陵", g:{ troop:0.3,grain:1.5,gen:"" }, quote:"衡州衡阳，荆湖南路。", tier:"medium" },
+  { n:"鼎州",   x:180, y:620, side:"song", terrain:"水网", g:{ troop:0.3,grain:1.5,gen:"" }, quote:"鼎州武陵，洞庭西岸。", tier:"medium", port:true },
+  // ===== 淮南补全 =====
+  { n:"泰州",   x:720, y:510, side:"song", terrain:"水网", g:{ troop:0.3,grain:1, gen:"" }, quote:"泰州海陵，淮南东路。", tier:"medium" },
+  { n:"通州",   x:780, y:520, side:"song", terrain:"水网", g:{ troop:0.2,grain:0.5,gen:"" }, quote:"通州静海，长江北口。", tier:"medium", port:true },
+  { n:"高邮军", x:680, y:500, side:"song", terrain:"水网", g:{ troop:0.3,grain:1, gen:"" }, quote:"高邮军，淮南东路要冲。", tier:"medium" },
+  { n:"安庆府", x:500, y:580, side:"song", terrain:"水网", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"安庆府怀宁，皖江北岸。", tier:"medium", port:true },
+  { n:"黄州",   x:380, y:560, side:"song", terrain:"水网", g:{ troop:0.3,grain:1, gen:"" }, quote:"黄州黄冈，东坡赤壁。", tier:"medium", port:true },
+  { n:"蕲州",   x:420, y:590, side:"song", terrain:"水网", g:{ troop:0.3,grain:1, gen:"" }, quote:"蕲州蕲春，江淮间。", tier:"medium", port:true },
+  // ===== 两浙补全 =====
+  { n:"湖州",   x:680, y:540, side:"song", terrain:"水网", g:{ troop:0.5,grain:2, gen:"" }, quote:"湖州乌程，太湖之滨。", tier:"medium", port:true },
+  { n:"常州",   x:650, y:530, side:"song", terrain:"水网", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"常州晋陵，长江南岸。", tier:"medium", port:true },
+  { n:"镇江府", x:600, y:520, side:"song", terrain:"渡口", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"镇江府丹徒，长江渡江要津。", tier:"medium", port:true },
+  { n:"庆元府", x:820, y:610, side:"song", terrain:"水网", g:{ troop:0.5,grain:2, gen:"" }, quote:"庆元府鄞县，海路外贸大港。", tier:"large", port:true },
+  { n:"温州",   x:780, y:680, side:"song", terrain:"丘陵", g:{ troop:0.3,grain:1.5,gen:"" }, quote:"温州永嘉，浙南海港。", tier:"medium", port:true },
+  // ===== 福建补全 =====
+  { n:"福州",   x:720, y:720, side:"song", terrain:"丘陵", g:{ troop:0.8,grain:2, gen:"" }, quote:"福州闽县，福建路首府。", tier:"large", port:true },
+  { n:"泉州",   x:680, y:740, side:"song", terrain:"丘陵", g:{ troop:0.5,grain:2, gen:"" }, quote:"泉州晋江，东方第一大港。", tier:"large", port:true },
+  { n:"建宁府", x:680, y:690, side:"song", terrain:"山地", g:{ troop:0.3,grain:1, gen:"" }, quote:"建宁府建安，闽北要冲。", tier:"medium" },
+  // ===== 广南补全 =====
+  { n:"广州",   x:500, y:800, side:"song", terrain:"水网", g:{ troop:1, grain:3, gen:"" }, quote:"广州南海，广南东路首府，蕃舶云集。", tier:"large", port:true },
+  { n:"韶州",   x:520, y:770, side:"song", terrain:"山地", g:{ troop:0.3,grain:1, gen:"" }, quote:"韶州曲江，粤北要冲。", tier:"medium" },
+  { n:"惠州",   x:560, y:810, side:"song", terrain:"水网", g:{ troop:0.2,grain:0.8,gen:"" }, quote:"惠州归善，岭南贬所。", tier:"medium" },
+  { n:"静江府", x:380, y:780, side:"song", terrain:"丘陵", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"静江府临桂，广南西路首府。", tier:"large" },
+  { n:"邕州",   x:320, y:820, side:"song", terrain:"丘陵", g:{ troop:0.5,grain:1, gen:"" }, quote:"邕州宣化，南诏交趾通道。", tier:"medium" },
+  { n:"琼州",   x:500, y:880, side:"song", terrain:"水网", g:{ troop:0.3,grain:1, gen:"" }, quote:"琼州琼山，海南孤岛。", tier:"medium", port:true },
+
 
   // ===== 天下关隘（地形关隘，攻守异势）=====
   { n:"居庸关", x:540, y:60,  side:"jin", terrain:"关隘", g:{ troop:1, grain:1, gen:"" }, quote:"太行八陉之最北口，控扼燕山府幽燕通道。", tier:"medium", port:false, feature:"关隘" },
@@ -1943,7 +2013,7 @@ function applyMapTransform(){
 function openMap(){
   const body = $("map-body");
   if(G.ending_verdict) resolveMapByVerdict(G.ending_verdict);
-  const W=900, H=780;
+  const W=900, H=920;
   const svg = renderMapSVG(W, H, true);
   const season = seasonOf(G.turn);
   const jinCount = MAP_NODES.filter(n=>n.side==="jin").length;
@@ -2028,7 +2098,7 @@ function renderMiniMap(){
   const box = $("mini-map");
   if(!box) return;
   if(G.ending_verdict) resolveMapByVerdict(G.ending_verdict);
-  box.innerHTML = renderMapSVG(900, 780, false);
+  box.innerHTML = renderMapSVG(900, 920, false);
   box.onclick = ()=>openMap();
 }
 $("btn-map-close").addEventListener("click", ()=>closeMask("mask-map"));
