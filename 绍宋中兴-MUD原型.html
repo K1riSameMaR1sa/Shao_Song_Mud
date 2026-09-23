@@ -1818,7 +1818,65 @@ const MAP_NODES = [
   { n:"潼关",   x:250, y:280, side:"jin", terrain:"关隘", g:{ troop:1.5,grain:2, gen:"" }, quote:"华山扼河而塞，关东入关中第一锁钥。", tier:"large", port:false, feature:"关隘" },
   { n:"大散关", x:70,  y:430, side:"song", terrain:"关隘", g:{ troop:1, grain:2, gen:"" }, quote:"蜀口第一关，吴玠坚守于此，金人不能越。", tier:"medium", port:false, feature:"关隘" },
   { n:"仙人关", x:100, y:400, side:"song", terrain:"关隘", g:{ troop:0.8,grain:1.5,gen:"吴玠" }, quote:"仙人关杀金坪，建炎四年吴玠大破兀术处。", tier:"medium", port:false, feature:"关隘" },
-  { n:"剑门关", x:70,  y:540, side:"song", terrain:"关隘", g:{ troop:0.5,grain:1, gen:"" }, quote:"蜀道天险，一夫当关万夫莫开。", tier:"medium", port:false, feature:"关隘" }
+  { n:"剑门关", x:70,  y:540, side:"song", terrain:"关隘", g:{ troop:0.5,grain:1, gen:"" }, quote:"蜀道天险，一夫当关万夫莫开。", tier:"medium", port:false, feature:"关隘" },
+
+  // ===== 河东路（金）=====
+  { n:"潞州",   x:220, y:140, side:"jin", terrain:"山地", g:{ troop:0.8,grain:2, gen:"" }, quote:"上党形胜，河东雄镇。", tier:"medium", port:false },
+  { n:"晋州",   x:250, y:170, side:"jin", terrain:"平原", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"平阳府，河东要冲。", tier:"medium", port:false },
+  { n:"麟州",   x:130, y:110, side:"jin", terrain:"山地", g:{ troop:0.3,grain:0.5,gen:"" }, quote:"杨家将旧镇，北接西夏。", tier:"medium", port:false },
+
+  // ===== 河北东西路（金）=====
+  { n:"定州",   x:450, y:95,  side:"jin", terrain:"平原", g:{ troop:1, grain:2.5,gen:"" }, quote:"中山府，北控幽燕。", tier:"large", port:false },
+  { n:"相州",   x:430, y:160, side:"jin", terrain:"平原", g:{ troop:0.8,grain:2, gen:"" }, quote:"邺郡故地，河北重镇。", tier:"medium", port:false },
+  { n:"邢州",   x:380, y:160, side:"jin", terrain:"平原", g:{ troop:0.6,grain:1.5,gen:"" }, quote:"信德府，河北西路。", tier:"medium", port:false },
+  { n:"恩州",   x:570, y:170, side:"jin", terrain:"平原", g:{ troop:0.4,grain:1, gen:"" }, quote:"清河郡，河北东路边州。", tier:"medium", port:false },
+
+  // ===== 京东东西路（金）=====
+  { n:"密州",   x:850, y:260, side:"jin", terrain:"丘陵", g:{ troop:0.6,grain:1.5,gen:"" }, quote:"诸城，滨海要郡。", tier:"medium", port:true },
+  { n:"登州",   x:920, y:240, side:"jin", terrain:"丘陵", g:{ troop:0.4,grain:1, gen:"" }, quote:"蓬莱北望，海道通辽东。", tier:"medium", port:true },
+  { n:"济州",   x:650, y:260, side:"jin", terrain:"平原", g:{ troop:0.4,grain:1, gen:"" }, quote:"任城，京东西路。", tier:"medium", port:false },
+
+  // ===== 京西北路（金）=====
+  { n:"孟州",   x:330, y:240, side:"jin", terrain:"渡口", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"河阳三城，黄河南渡要津。", tier:"medium", port:true },
+  { n:"蔡州",   x:380, y:330, side:"jin", terrain:"平原", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"汝阳，淮西北门。", tier:"medium", port:false },
+  { n:"汝州",   x:320, y:300, side:"jin", terrain:"丘陵", g:{ troop:0.3,grain:1, gen:"" }, quote:"临汝，京西北路。", tier:"medium", port:false },
+
+  // ===== 永兴军路（金）=====
+  { n:"延州",   x:120, y:220, side:"jin", terrain:"山地", g:{ troop:1, grain:2, gen:"" }, quote:"延安府，鄜延路帅司。", tier:"large", port:false },
+  { n:"秦州",   x:50,  y:340, side:"song", terrain:"关隘", g:{ troop:1.5,grain:2.5,gen:"吴玠" }, quote:"天水军，秦凤路帅司，西军根本。", tier:"large", port:false, feature:"关隘" },
+  { n:"庆州",   x:90,  y:290, side:"jin", terrain:"山地", g:{ troop:0.6,grain:1.5,gen:"" }, quote:"庆阳府，环庆路帅司。", tier:"medium", port:false },
+
+  // ===== 淮南东西路 =====
+  { n:"泰州",   x:760, y:450, side:"song", terrain:"水网", g:{ troop:0.3,grain:1, gen:"" }, quote:"海陵，淮南东路边州。", tier:"medium", port:true },
+  { n:"真州",   x:650, y:500, side:"song", terrain:"渡口", g:{ troop:0.4,grain:1.5,gen:"" }, quote:"扬子渡，江淮漕运枢纽。", tier:"medium", port:true },
+  { n:"蕲州",   x:420, y:530, side:"song", terrain:"水网", g:{ troop:0.4,grain:1.5,gen:"" }, quote:"蕲春，淮西水路。", tier:"medium", port:true },
+
+  // ===== 江南东西路 =====
+  { n:"湖州",   x:740, y:540, side:"song", terrain:"水网", g:{ troop:0.3,grain:1.5,gen:"" }, quote:"吴兴，两浙路北州。", tier:"medium", port:true },
+  { n:"常州",   x:700, y:520, side:"song", terrain:"水网", g:{ troop:0.4,grain:1.5,gen:"" }, quote:"毗陵，江南要冲。", tier:"medium", port:true },
+  { n:"吉州",   x:480, y:660, side:"song", terrain:"丘陵", g:{ troop:0.3,grain:2, gen:"" }, quote:"庐陵，江西大郡。", tier:"medium", port:false },
+  { n:"赣州",   x:440, y:710, side:"song", terrain:"山地", g:{ troop:0.3,grain:1.5,gen:"" }, quote:"虔州，江西南门通广南。", tier:"medium", port:false },
+
+  // ===== 两浙/福建 =====
+  { n:"婺州",   x:780, y:620, side:"song", terrain:"丘陵", g:{ troop:0.3,grain:1.5,gen:"" }, quote:"金华，两浙东路。", tier:"medium", port:false },
+  { n:"温州",   x:880, y:660, side:"song", terrain:"水网", g:{ troop:0.4,grain:1.5,gen:"" }, quote:"永嘉，浙南海港。", tier:"medium", port:true },
+  { n:"福州",   x:860, y:720, side:"song", terrain:"丘陵", g:{ troop:0.6,grain:2, gen:"" }, quote:"闽县，福建路帅司。", tier:"large", port:true },
+  { n:"泉州",   x:820, y:760, side:"song", terrain:"水网", g:{ troop:0.4,grain:1.5,gen:"" }, quote:"蕃舶港，海贸都会。", tier:"medium", port:true },
+
+  // ===== 广南东西路 =====
+  { n:"广州",   x:560, y:790, side:"song", terrain:"水网", g:{ troop:0.8,grain:2.5,gen:"" }, quote:"南海都会，市舶司所在。", tier:"large", port:true },
+  { n:"桂州",   x:380, y:760, side:"song", terrain:"丘陵", g:{ troop:0.5,grain:2, gen:"" }, quote:"静江府，广西路帅司。", tier:"large", port:false },
+
+  // ===== 川峡四路 =====
+  { n:"利州",   x:60,  y:510, side:"song", terrain:"山地", g:{ troop:0.5,grain:1.5,gen:"" }, quote:"绵谷，利州路帅司。", tier:"medium", port:false },
+  { n:"遂州",   x:110, y:630, side:"song", terrain:"平原", g:{ troop:0.3,grain:2, gen:"" }, quote:"遂宁府，川中大郡。", tier:"medium", port:false },
+  { n:"重庆府", x:180, y:660, side:"song", terrain:"丘陵", g:{ troop:0.5,grain:2, gen:"" }, quote:"恭州，长江上游重镇。", tier:"medium", port:true },
+  { n:"夔州",   x:240, y:630, side:"song", terrain:"山地", g:{ troop:0.4,grain:1.5,gen:"" }, quote:"瞿塘峡口，川东门户。", tier:"medium", port:true },
+
+  // ===== 荆湖南北 =====
+  { n:"岳州",   x:230, y:580, side:"song", terrain:"水网", g:{ troop:0.4,grain:1.5,gen:"" }, quote:"巴陵，洞庭湖畔。", tier:"medium", port:true },
+  { n:"鼎州",   x:170, y:610, side:"song", terrain:"水网", g:{ troop:0.5,grain:2, gen:"" }, quote:"武陵，洞庭湖西。", tier:"medium", port:true },
+  { n:"衡州",   x:320, y:680, side:"song", terrain:"丘陵", g:{ troop:0.4,grain:1.5,gen:"" }, quote:"衡阳，荆湖南路。", tier:"medium", port:false }
 ];
 
 // 军队图标：troops 万，size 按人数自动分 large(>=20万)/medium(10-20万)/small(<10万)
@@ -1948,6 +2006,25 @@ function renderMapSVG(W, H, detailed){
     svg += `<text x="${W/2}" y="22" text-anchor="middle" fill="var(--paper)" font-size="13" letter-spacing="4" font-family="serif">淮 汉 舆 图 · 建 炎 元 年</text>`;
     svg += `<text x="${W-20}" y="22" text-anchor="end" fill="${season.key==="冬"?"#9ec5e0":season.key==="春"?"#a8d5a2":"#e8c89a"}" font-size="11" font-weight="bold">${season.note}</text>`;
   }
+  // ---- 州郡边界（浅灰虚线勾勒各路）----
+  const REGION_BOUNDS = [
+    { label:"河北河东", x:300, y:60, w:560, h:180 },
+    { label:"陕西",     x:30,  y:200,w:220, h:180 },
+    { label:"淮南",     x:300, y:360,w:560, h:110 },
+    { label:"江南",     x:120, y:480,w:760, h:200 },
+    { label:"川蜀",     x:30,  y:460,w:200, h:200 },
+    { label:"福建广南", x:400, y:680,w:480, h:130 }
+  ];
+  REGION_BOUNDS.forEach(r=>{
+    svg += `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="none" stroke="#4a5058" stroke-width="0.8" stroke-dasharray="6,5" opacity="0.5"/>`;
+    svg += `<text x="${r.x+6}" y="${r.y+12}" fill="#6a7078" font-size="9" opacity="0.7">${r.label}</text>`;
+  });
+  // ---- 山川图标：山地/关隘城池旁加 ▲ ----
+  MAP_NODES.forEach(n=>{
+    if(n.terrain==="山地" || n.terrain==="关隘"){
+      svg += `<text x="${n.x-14}" y="${n.y-6}" fill="#8a7a6a" font-size="10" opacity="0.6">▲</text>`;
+    }
+  });
   // ---- 河流 ----
   // 黄河：京兆 → 洛阳 → 开封 → 东平 → 沧州
   svg += `<polyline points="150,285 280,270 360,260 480,270 610,230 720,95" fill="none" stroke="#3a6a8a" stroke-width="3.5" opacity="0.7"/>`;
@@ -1997,8 +2074,8 @@ function renderMapSVG(W, H, detailed){
       const r = size==="large" ? 10 : size==="medium" ? 7 : 4.5;
       const c = a.side==="jin" ? "#d4af37" : "#e07a5f";
       const y = a.offsetY ? ay + a.offsetY : ay;
-      svg += `<polygon points="${ax},${y-r} ${ax-r},${y+r*0.7} ${ax+r},${y+r*0.7}" fill="${c}" stroke="#14181f" stroke-width="1" opacity="0.95"/>`;
-      svg += `<text x="${ax}" y="${y+r+10}" text-anchor="middle" fill="${c}" font-size="10" font-weight="bold">${a.gen}</text>`;
+      svg += `<polygon points="${ax},${y-r} ${ax-r},${y+r*0.7} ${ax+r},${y+r*0.7}" fill="${c}" stroke="#14181f" stroke-width="1" opacity="0.95" class="army-token" data-army="${a.gen}" style="cursor:${a.isPlayer?"grab":"default"}"/>`;
+      svg += `<text x="${ax}" y="${y+r+10}" text-anchor="middle" fill="${c}" font-size="10" font-weight="bold" class="army-token" data-army="${a.gen}" style="cursor:${a.isPlayer?"grab":"default"}">${a.gen}</text>`;
       svg += `<text x="${ax}" y="${y+r+20}" text-anchor="middle" fill="var(--gray)" font-size="9">${a.troops}万</text>`;
     });
   }
@@ -2048,17 +2125,47 @@ function openMap(){
   }, { passive:false });
   // ---- 拖拽平移 ----
   let dragging = false, sx=0, sy=0, stx=0, sty=0;
+  let draggingArmy = null;  // 正在拖的兵牌
   vp.addEventListener("mousedown", e=>{
+    // 先看是否点在我方兵牌上
+    const t = e.target.closest(".army-token");
+    if(t && t.style.cursor === "grab"){
+      const gen = t.dataset.army;
+      const army = ARMIES.find(a=>a.gen===gen);
+      if(army && army.isPlayer){
+        draggingArmy = army;
+        vp.style.cursor = "grabbing";
+        return;
+      }
+    }
     dragging = true; sx = e.clientX; sy = e.clientY; stx = mapView.tx; sty = mapView.ty;
     vp.style.cursor = "grabbing";
   });
   window.addEventListener("mousemove", e=>{
+    if(draggingArmy){
+      const rect = vp.getBoundingClientRect();
+      // 屏幕坐标 → SVG 坐标
+      const px = (e.clientX - rect.left - mapView.tx) / mapView.scale;
+      const py = (e.clientY - rect.top - mapView.ty) / mapView.scale;
+      draggingArmy.x = Math.max(20, Math.min(W-20, px));
+      draggingArmy.y = Math.max(20, Math.min(H-20, py));
+      // 重渲染
+      const inner = document.getElementById("map-inner");
+      if(inner) inner.innerHTML = renderMapSVG(W, H, true);
+      return;
+    }
     if(!dragging) return;
     mapView.tx = stx + (e.clientX - sx);
     mapView.ty = sty + (e.clientY - sy);
     applyMapTransform();
   });
-  window.addEventListener("mouseup", ()=>{ dragging=false; vp.style.cursor="grab"; });
+  window.addEventListener("mouseup", ()=>{
+    if(draggingArmy){
+      logTurn(`张俊所部移驻至 (${Math.round(draggingArmy.x)}, ${Math.round(draggingArmy.y)})`, "good");
+      draggingArmy = null;
+    }
+    dragging=false; vp.style.cursor="grab";
+  });
   // ---- 双击复位 ----
   vp.addEventListener("dblclick", ()=>{
     mapView = { scale:1, tx:0, ty:0 };
